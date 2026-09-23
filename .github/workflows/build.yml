@@ -60,7 +60,7 @@ jobs:
           releases="$(gh api --paginate repos/${{ github.repository }}/releases --jq '.[].tag_name' || true)"
 
           next="1.0"
-          max=0
+          max=-1
 
           while IFS= read -r tag; do
             case "$tag" in
@@ -76,7 +76,7 @@ jobs:
             esac
           done <<< "$releases"
 
-          if (( max > 0 )); then
+          if (( max >= 0 )); then
             next=$(printf '1.%02d' "$((max + 1))")
           fi
 
