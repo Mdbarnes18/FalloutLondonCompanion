@@ -118,7 +118,10 @@ final class InventoryStore: ObservableObject {
         let equipped = (number("equipstate") ?? number("equipped") ?? 0) != 0
         let stackIDs = readStackIDs(database, path: path)
 
-        let resolvedCategory = inheritedCategory ?? categoryFromItem(database, path: path)
+        let resolvedCategory =
+            inheritedCategory ??
+            categoryFromFilterFlag(number("filterflag")) ??
+            categoryFromItem(database, path: path)
 
         return InventoryItem(
             id: "(handle ?? form ?? nodeID)-(resolvedCategory.rawValue)",
@@ -160,6 +163,19 @@ final class InventoryStore: ObservableObject {
         case "misc", "miscellaneous": return .misc
         case "junk": return .junk
         case "ammo", "ammunition": return .ammo
+        default: return nil
+        }
+    }
+
+    private func categoryFromFilterFlag(_ value: Double?) -> InventoryCategory? {
+        guard let value else { return nil }
+        switch Int(value) {
+        case 2: return .weapons
+        case 4: return .apparel
+        case 8: return .aid
+        case 512, 1024: return .junk
+        case 4096: return .ammo
+        case 640: return .misc
         default: return nil
         }
     }
