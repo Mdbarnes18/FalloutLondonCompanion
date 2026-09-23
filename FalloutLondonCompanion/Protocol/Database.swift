@@ -70,6 +70,10 @@ final class PipboyDatabase {
         return nodes[id]?.value
     }
 
+    func arrayChildren(at nodeID: UInt32) -> [UInt32]? { nodes[nodeID]?.arrayChildren }
+
+    func value(atNode nodeID: UInt32) -> PipboyValue? { nodes[nodeID]?.value }
+
     func objectChildren(at path: String = "") -> [String: UInt32] {
         let id: UInt32
         if path.isEmpty {
