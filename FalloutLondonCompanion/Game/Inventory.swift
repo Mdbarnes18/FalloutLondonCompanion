@@ -73,11 +73,11 @@ final class InventoryStore: ObservableObject {
 
         for (key, childID) in database.objectChildren(atNode: nodeID) {
             let childCategory = category(from: key) ?? inheritedCategory
-            scan(database, nodeID: childID, path: "(path).(key)", inheritedCategory: childCategory, depth: depth + 1, into: &output)
+            scan(database, nodeID: childID, path: "\(path).\(key)", inheritedCategory: childCategory, depth: depth + 1, into: &output)
         }
 
         for (index, childID) in (database.arrayChildren(at: nodeID) ?? []).enumerated() {
-            scan(database, nodeID: childID, path: "(path)[(index)]", inheritedCategory: inheritedCategory, depth: depth + 1, into: &output)
+            scan(database, nodeID: childID, path: "\(path)[\(index)]", inheritedCategory: inheritedCategory, depth: depth + 1, into: &output)
         }
     }
 
@@ -88,12 +88,12 @@ final class InventoryStore: ObservableObject {
         inheritedCategory: InventoryCategory?
     ) -> InventoryItem? {
         func string(_ key: String) -> String? {
-            guard case .string(let value) = database.value(at: "(path).(key)") else { return nil }
+            guard case .string(let value) = database.value(at: "\(path).\(key)") else { return nil }
             return value
         }
 
         func number(_ key: String) -> Double? {
-            switch database.value(at: "(path).(key)") {
+            switch database.value(at: "\(path).\(key)") {
             case .float32(let v): return Double(v)
             case .int32(let v): return Double(v)
             case .uint32(let v): return Double(v)
@@ -124,7 +124,7 @@ final class InventoryStore: ObservableObject {
             categoryFromItem(database, path: path)
 
         return InventoryItem(
-            id: "(handle ?? form ?? nodeID)-(resolvedCategory.rawValue)",
+            id: "\(handle ?? form ?? nodeID)-\(resolvedCategory.rawValue)",
             name: name,
             count: count,
             weight: number("weight") ?? 0,
@@ -145,7 +145,7 @@ final class InventoryStore: ObservableObject {
     }
 
     private func readStackIDs(_ database: PipboyDatabase, path: String) -> [UInt32] {
-        guard let node = database.nodeID(at: "(path).stackid") else { return [] }
+        guard let node = database.nodeID(at: "\(path).stackid") else { return [] }
         return (database.arrayChildren(at: node) ?? []).compactMap {
             switch database.value(atNode: $0) {
             case .uint32(let value): return value
