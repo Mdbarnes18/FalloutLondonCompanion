@@ -9,7 +9,7 @@ struct InventoryView: View {
                 Text("INV")
                     .font(.system(size: 20, design: .monospaced))
                 Spacer()
-                Text("(app.inventory.items(in: app.inventory.category).count) ITEMS")
+                Text("\(app.inventory.items(in: app.inventory.category).count) ITEMS")
                     .font(.system(size: 11, design: .monospaced))
             }
 
@@ -53,7 +53,7 @@ struct InventoryView: View {
                             Spacer(minLength: 2)
                             if item.equipped { Text("E") }
                             if item.favoriteSlot != nil { Text("★") }
-                            if item.count > 1 { Text("x(item.count)") }
+                            if item.count > 1 { Text("x\(item.count)") }
                         }
                         .font(.system(size: 11, design: .monospaced))
                         .padding(.vertical, 4)
@@ -82,9 +82,9 @@ struct InventoryView: View {
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                     if item.legendary { Text("★ LEGENDARY") }
                     if item.equipped { Text("EQUIPPED") }
-                    Text("COUNT  (item.count)")
+                    Text("COUNT  \(item.count)")
                     Text(String(format: "WEIGHT %.1f", item.weight))
-                    Text("VALUE  (item.value)")
+                    Text("VALUE  \(item.value)")
                     if let damage = item.damage { Text(String(format: "DMG    %.0f", damage)) }
                     if let armor = item.armor { Text(String(format: "ARMOR  %.0f", armor)) }
                     if let rr = item.radiationResistance { Text(String(format: "RAD RES %.0f", rr)) }
