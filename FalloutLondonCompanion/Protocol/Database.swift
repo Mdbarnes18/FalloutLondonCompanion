@@ -94,7 +94,6 @@ final class PipboyDatabase {
         var current = rootID
         for token in tokens {
             var key = token
-            var indexes: [Int] = []
             while let open = key.firstIndex(of: "[") {
                 let base = String(key[..<open])
                 if !base.isEmpty {
