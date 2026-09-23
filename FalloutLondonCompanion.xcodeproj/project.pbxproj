@@ -16,7 +16,8 @@
  00000000000000000000006D /* PacketDecoder.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PacketDecoder.swift"; sourceTree = "<group>"; };
  00000000000000000000006E /* LondonTheme.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LondonTheme.swift"; sourceTree = "<group>"; };
  00000000000000000000006F /* RootView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RootView.swift"; sourceTree = "<group>"; };
- 000000000000000000000071 /* InventoryView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InventoryView.swift"; sourceTree = "<group>"; };\n 000000000000000000000070 /* StatusView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusView.swift"; sourceTree = "<group>"; };
+ 000000000000000000000071 /* InventoryView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InventoryView.swift"; sourceTree = "<group>"; };
+ 000000000000000000000070 /* StatusView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusView.swift"; sourceTree = "<group>"; };
  0000000000000000000003E8 /* ATTABoy */ = { isa = PBXGroup; children = ( 000000000000000000000064, 000000000000000000000065 ); path = "ATTABoy"; sourceTree = "<group>"; };
  0000000000000000000003E9 /* App */ = { isa = PBXGroup; children = ( 000000000000000000000066, 000000000000000000000067 ); path = "App"; sourceTree = "<group>"; };
  0000000000000000000003EA /* Game */ = { isa = PBXGroup; children = ( 000000000000000000000068, 000000000000000000000069, 00000000000000000000006A ); path = "Game"; sourceTree = "<group>"; };
@@ -38,7 +39,8 @@
  0000000000000000000000D1 /* PacketDecoder.swift in Sources */ = { isa = PBXBuildFile; fileRef = 00000000000000000000006D; };
  0000000000000000000000D2 /* LondonTheme.swift in Sources */ = { isa = PBXBuildFile; fileRef = 00000000000000000000006E; };
  0000000000000000000000D3 /* RootView.swift in Sources */ = { isa = PBXBuildFile; fileRef = 00000000000000000000006F; };
- 0000000000000000000000D4 /* StatusView.swift in Sources */ = { isa = PBXBuildFile; fileRef = 000000000000000000000070; };\n 0000000000000000000000D5 /* InventoryView.swift in Sources */ = { isa = PBXBuildFile; fileRef = 000000000000000000000071; };
+ 0000000000000000000000D4 /* StatusView.swift in Sources */ = { isa = PBXBuildFile; fileRef = 000000000000000000000070; };
+ 0000000000000000000000D5 /* InventoryView.swift in Sources */ = { isa = PBXBuildFile; fileRef = 000000000000000000000071; };
  000000000000000000000001 /* Project object */ = { isa = PBXProject; attributes = { LastUpgradeCheck = 1600; ORGANIZATIONNAME = "Fallout London Companion"; }; buildConfigurationList = 000000000000000000000009; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; mainGroup = 000000000000000000000002; productRefGroup = 000000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = ( 000000000000000000000006 ); };
  000000000000000000000002 /* Main Group */ = { isa = PBXGroup; children = ( 000000000000000000000003, 000000000000000000000004 ); sourceTree = "<group>"; };
  000000000000000000000006 /* ATTA-Boy */ = { isa = PBXNativeTarget; buildConfigurationList = 00000000000000000000000C; buildPhases = ( 000000000000000000000007, 000000000000000000000008 ); buildRules = (); dependencies = (); name = "ATTA-Boy"; productName = "ATTA-Boy"; productReference = 000000000000000000000005; productType = "com.apple.product-type.application"; };
