@@ -1,4 +1,4 @@
-name: Build ATTA-Boy IPA
+name: Build Fallout London Companion IPA
 
 permissions:
   contents: write
@@ -41,13 +41,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -R "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/ATTA-Boy.app" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
-          /usr/bin/zip -qry ATTA-Boy.ipa Payload
+          /usr/bin/zip -qry "Fallout London Companion.ipa" Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ATTA-Boy-ipa
-          path: ${{ runner.temp }}/ATTA-Boy.ipa
+          name: Fallout-London-Companion-ipa
+          path: ${{ runner.temp }}/Fallout London Companion.ipa
           if-no-files-found: error
 
       - name: Create GitHub release
@@ -81,10 +81,10 @@ jobs:
           fi
 
           tag="$next"
-          title="FalloutLondonCompanion $next"
+          title="Fallout London Companion $next"
 
           gh release create "$tag" \
-            "$RUNNER_TEMP/ATTA-Boy.ipa" \
+            "$RUNNER_TEMP/Fallout London Companion.ipa" \
             --title "$title" \
             --generate-notes \
             --target ${{ github.sha }}
