@@ -81,7 +81,7 @@ jobs:
           fi
 
           tag="$next"
-          title="ATTA-Boy $next"
+          title="FalloutLondonCompanion $next"
 
           gh release create "$tag" \
             "$RUNNER_TEMP/ATTA-Boy.ipa" \
