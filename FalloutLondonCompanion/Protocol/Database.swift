@@ -1,9 +1,126 @@
 import Foundation
 
 final class PipboyDatabase {
-    private(set) var values: [String: AnyHashable] = [:]
-    func apply(_ update: PipboyUpdate) {
-        if case .values(let values) = update { self.values.merge(values) { _, new in new } }
+    final class Node {
+        let id: UInt32
+        var value: PipboyValue?
+        var objectChildren: [String: UInt32] = [:]
+        var arrayChildren: [UInt32] = []
+
+        init(id: UInt32) { self.id = id }
     }
-    func value<T>(_ path: String, as type: T.Type = T.self) -> T? { values[path] as? T }
+
+    private(set) var nodes: [UInt32: Node] = [:]
+    private(set) var rootID: UInt32 = 0
+    private(set) var localMap: PipboyLocalMapUpdate?
+
+    func reset() {
+        nodes.removeAll()
+        rootID = 0
+        localMap = nil
+    }
+
+    func apply(_ update: PipboyUpdate) {
+        switch update {
+        case .data(let data):
+            for record in data.records { apply(record) }
+        case .localMap(let map):
+            localMap = map
+        case .commandResponse:
+            break
+        case .unknown:
+            break
+        }
+    }
+
+    func apply(_ record: PipboyRecord) {
+        switch record {
+        case .value(let id, let value):
+            node(id).value = value
+        case .array(let id, let children):
+            let n = node(id)
+            n.arrayChildren = children
+            n.value = nil
+        case .object(let id, let added, let removed):
+            let n = node(id)
+            for item in added { n.objectChildren[item.key] = item.nodeID }
+            for childID in removed {
+                n.objectChildren = n.objectChildren.filter { $0.value != childID }
+            }
+            n.value = nil
+        }
+    }
+
+    func value<T>(_ path: String, as type: T.Type = T.self) -> T? {
+        guard let value = value(at: path) else { return nil }
+        switch value {
+        case .bool(let v): return v as? T
+        case .int8(let v): return v as? T
+        case .uint8(let v): return v as? T
+        case .int32(let v): return v as? T
+        case .uint32(let v): return v as? T
+        case .float32(let v): return v as? T
+        case .string(let v): return v as? T
+        case .null: return nil
+        }
+    }
+
+    func value(at path: String) -> PipboyValue? {
+        let parts = path.split(separator: ".").map(String.init)
+        guard !parts.isEmpty else { return nil }
+
+        var current = rootID
+        for part in parts {
+            guard let child = nodes[current]?.objectChildren[part] else { return nil }
+            current = child
+        }
+        return nodes[current]?.value
+    }
+
+    func objectChildren(at path: String = "") -> [String: UInt32] {
+        let id: UInt32
+        if path.isEmpty {
+            id = rootID
+        } else {
+            guard let nodeID = nodeID(at: path) else { return [:] }
+            id = nodeID
+        }
+        return nodes[id]?.objectChildren ?? [:]
+    }
+
+    func nodeID(at path: String) -> UInt32? {
+        let parts = path.split(separator: ".").map(String.init)
+        var current = rootID
+        for part in parts {
+            guard let child = nodes[current]?.objectChildren[part] else { return nil }
+            current = child
+        }
+        return current
+    }
+
+    func flattenedValues(prefix: String = "") -> [String: PipboyValue] {
+        var output: [String: PipboyValue] = [:]
+        walk(id: rootID, path: prefix, output: &output)
+        return output
+    }
+
+    private func walk(id: UInt32, path: String, output: inout [String: PipboyValue]) {
+        guard let n = nodes[id] else { return }
+        if let value = n.value, !path.isEmpty { output[path] = value }
+        for (key, childID) in n.objectChildren {
+            let childPath = path.isEmpty ? key : "\(path).\(key)"
+            walk(id: childID, path: childPath, output: &output)
+        }
+        for (index, childID) in n.arrayChildren.enumerated() {
+            let childPath = path.isEmpty ? "[\(index)]" : "\(path)[\(index)]"
+            walk(id: childID, path: childPath, output: &output)
+        }
+    }
+
+    private func node(_ id: UInt32) -> Node {
+        if let existing = nodes[id] { return existing }
+        let created = Node(id: id)
+        nodes[id] = created
+        return created
+    }
 }
