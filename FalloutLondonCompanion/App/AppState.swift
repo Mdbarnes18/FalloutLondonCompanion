@@ -12,6 +12,7 @@ final class AppState: ObservableObject {
     let connectionService = ConnectionService()
     let database = PipboyDatabase()
     let medical = MedicalController()
+    let inventory = InventoryStore()
 
     init() {
         connectionService.onStateChange = { [weak self] state in
@@ -41,6 +42,7 @@ final class AppState: ObservableObject {
     private func apply(_ update: PipboyUpdate) {
         database.apply(update)
         player = PlayerState.from(database: database, fallback: player)
+        inventory.refresh(from: database)
         medical.consume(player: player, database: database, connection: connectionService)
     }
 }
