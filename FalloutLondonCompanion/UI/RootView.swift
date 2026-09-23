@@ -17,7 +17,7 @@ struct MainInterface: View {
             CRTFrame {
                 switch app.selectedTab {
                 case .stat: StatusView()
-                case .inv: PlaceholderScreen(title: "INVENTORY")
+                case .inv: InventoryView()
                 case .data: PlaceholderScreen(title: "DATA")
                 case .map: PlaceholderScreen(title: "MAP")
                 case .radio: PlaceholderScreen(title: "RADIO")
