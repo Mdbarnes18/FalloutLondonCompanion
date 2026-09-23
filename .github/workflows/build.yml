@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: atta-boy-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: macos-15
@@ -17,14 +21,14 @@ jobs:
       - name: Show Xcode
         run: xcodebuild -version
 
-      - name: Build unsigned archive
+      - name: Build unsigned iOS app
         run: |
-          xcodebuild archive \
+          xcodebuild build \
             -project FalloutLondonCompanion.xcodeproj \
             -scheme ATTA-Boy \
             -sdk iphoneos \
             -configuration Release \
-            -archivePath "$RUNNER_TEMP/ATTA-Boy.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
 
@@ -32,7 +36,7 @@ jobs:
         run: |
           rm -rf "$RUNNER_TEMP/Payload"
           mkdir -p "$RUNNER_TEMP/Payload"
-          cp -R "$RUNNER_TEMP/ATTA-Boy.xcarchive/Products/Applications/ATTA-Boy.app" "$RUNNER_TEMP/Payload/"
+          cp -R "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/ATTA-Boy.app" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
           /usr/bin/zip -qry ATTA-Boy.ipa Payload
 
@@ -40,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ATTA-Boy-ipa
-          path: \${{ runner.temp }}/ATTA-Boy.ipa
+          path: ${{ runner.temp }}/ATTA-Boy.ipa
           if-no-files-found: error
