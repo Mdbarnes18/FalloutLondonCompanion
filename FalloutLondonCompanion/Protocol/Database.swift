@@ -66,15 +66,8 @@ final class PipboyDatabase {
     }
 
     func value(at path: String) -> PipboyValue? {
-        let parts = path.split(separator: ".").map(String.init)
-        guard !parts.isEmpty else { return nil }
-
-        var current = rootID
-        for part in parts {
-            guard let child = nodes[current]?.objectChildren[part] else { return nil }
-            current = child
-        }
-        return nodes[current]?.value
+        guard let id = nodeID(at: path) else { return nil }
+        return nodes[id]?.value
     }
 
     func objectChildren(at path: String = "") -> [String: UInt32] {
@@ -89,13 +82,44 @@ final class PipboyDatabase {
     }
 
     func nodeID(at path: String) -> UInt32? {
-        let parts = path.split(separator: ".").map(String.init)
+        let tokens = path.split(separator: ".").map(String.init)
+        guard !tokens.isEmpty else { return rootID }
+
         var current = rootID
-        for part in parts {
-            guard let child = nodes[current]?.objectChildren[part] else { return nil }
-            current = child
+        for token in tokens {
+            var key = token
+            var indexes: [Int] = []
+            while let open = key.firstIndex(of: "[") {
+                let base = String(key[..<open])
+                if !base.isEmpty {
+                    guard let child = nodes[current]?.objectChildren[base] else { return nil }
+                    current = child
+                }
+                guard let close = key.firstIndex(of: "]"),
+                      let index = Int(key[key.index(after: open)..<close]),
+                      index >= 0,
+                      let child = nodes[current]?.arrayChildren[safe: index] else { return nil }
+                current = child
+                key = String(key[key.index(after: close)...])
+            }
+            if !key.isEmpty {
+                guard let child = nodes[current]?.objectChildren[key] else { return nil }
+                current = child
+            }
         }
         return current
+    }
+
+    func firstObjectPath(in arrayPath: String, where key: String, equals expected: PipboyValue) -> String? {
+        guard let arrayID = nodeID(at: arrayPath), let array = nodes[arrayID] else { return nil }
+        for (index, childID) in array.arrayChildren.enumerated() {
+            guard let child = nodes[childID],
+                  let valueID = child.objectChildren[key],
+                  let value = nodes[valueID]?.value,
+                  value == expected else { continue }
+            return "\(arrayPath)[\(index)]"
+        }
+        return nil
     }
 
     func flattenedValues(prefix: String = "") -> [String: PipboyValue] {
@@ -122,5 +146,12 @@ final class PipboyDatabase {
         let created = Node(id: id)
         nodes[id] = created
         return created
+    }
+}
+
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
