@@ -19,7 +19,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Show Xcode
         run: xcodebuild -version
@@ -44,7 +44,7 @@ jobs:
           /usr/bin/zip -qry ATTA-Boy.ipa Payload
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ATTA-Boy-ipa
           path: ${{ runner.temp }}/ATTA-Boy.ipa
