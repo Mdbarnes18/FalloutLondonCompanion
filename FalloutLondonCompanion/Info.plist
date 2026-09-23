@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleDisplayName</key><string>ATTA-Boy</string>
+<key>CFBundleDisplayName</key><string>Fallout London Companion</string>
 <key>CFBundleIdentifier</key><string>com.falloutlondon.attaboy</string>
-<key>CFBundleName</key><string>ATTA-Boy</string>
+<key>CFBundleName</key><string>Fallout London Companion</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1.0</string>
 <key>CFBundleVersion</key><string>1</string>
 <key>UILaunchScreen</key><dict/>
-<key>NSLocalNetworkUsageDescription</key><string>ATTA-Boy connects to Fallout: London on your local network to display live game data.</string>
+<key>NSLocalNetworkUsageDescription</key><string>Fallout London Companion connects to Fallout: London on your local network to display live game data.</string>
 <key>NSBonjourServices</key><array><string>_pipboy._tcp</string></array>
 <key>UIRequiresFullScreen</key><true/>
 <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
