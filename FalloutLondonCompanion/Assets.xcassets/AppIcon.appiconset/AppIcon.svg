@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+ <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#263326"/><stop offset=".55" stop-color="#80633b"/><stop offset="1" stop-color="#28231d"/></linearGradient>
+ <radialGradient id="screen" cx="50%" cy="45%" r="70%"><stop stop-color="#2f8f45"/><stop offset=".6" stop-color="#073b1b"/><stop offset="1" stop-color="#020d07"/></radialGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <pattern id="scan" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="2" fill="#b7ffbf" opacity=".08"/></pattern>
+</defs>
+<rect width="1024" height="1024" rx="180" fill="#050706"/>
+<rect x="42" y="42" width="940" height="940" rx="150" fill="url(#shell)" stroke="#b7a277" stroke-width="12"/>
+<rect x="112" y="155" width="800" height="620" rx="105" fill="#101812" stroke="#4e574d" stroke-width="22"/>
+<rect x="135" y="178" width="754" height="574" rx="85" fill="url(#screen)" stroke="#17251a" stroke-width="20"/>
+<rect x="150" y="193" width="724" height="544" rx="70" fill="url(#scan)"/>
+<g fill="#9cff9c" font-family="monospace" text-anchor="middle" filter="url(#glow)">
+ <text x="512" y="355" font-size="92" font-weight="700">FALLOUT LONDON</text>
+ <text x="512" y="460" font-size="90" font-weight="700">COMPANION</text>
+ <path d="M235 505H789" stroke="#9cff9c" stroke-width="8"/>
+ <text x="512" y="610" font-size="54">ATTA-BOY SYSTEM</text>
+</g>
+<g fill="#071b0e" opacity=".95">
+ <path d="M160 700V665h45v-70h25v70h38v-105h28v105h35v-42h25v42h28v-85h25v85h30v-125h22v125h40v-72h22v72h34v-105h27v105h31v-58h24v58h32v-95h25v95h31v-55h22v55h43v-80h18v80h42v-135h24v135h35v37H160z"/>
+ <path d="M180 700l72-68 72 68zm72-68v68" stroke="#123c1f" stroke-width="8"/>
+ <path d="M805 700v-150l-38 55h26l12-22 12 22h26l-38-55z"/>
+</g>
+<path d="M835 235h45v110h-45z" fill="#27312b" stroke="#a98b5e" stroke-width="4"/>
+<path d="M840 240l35 100M875 240l-35 100M840 290h35M857.5 240v100" stroke="#b34b3b" stroke-width="6"/>
+<path d="M857.5 240v100M840 290h35" stroke="#ddd6c2" stroke-width="3"/>
+<circle cx="855" cy="840" r="54" fill="#1b1b19" stroke="#857452" stroke-width="10"/>
+<circle cx="855" cy="840" r="33" fill="#3b3932"/>
+<circle cx="855" cy="875" r="25" fill="#151614"/>
+<circle cx="184" cy="842" r="27" fill="#e9a53b" stroke="#8d6c38" stroke-width="8"/>
+<circle cx="184" cy="842" r="12" fill="#fff2b0" filter="url(#glow)"/>
+<g stroke="#161713" stroke-width="18" stroke-linecap="round"><path d="M365 850h28M415 850h28M465 850h28M515 850h28M565 850h28M615 850h28"/></g>
+</svg>
