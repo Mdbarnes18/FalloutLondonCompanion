@@ -72,6 +72,8 @@ final class PipboyDatabase {
 
     func arrayChildren(at nodeID: UInt32) -> [UInt32]? { nodes[nodeID]?.arrayChildren }
 
+    func objectChildren(atNode nodeID: UInt32) -> [String: UInt32] { nodes[nodeID]?.objectChildren ?? [:] }
+
     func value(atNode nodeID: UInt32) -> PipboyValue? { nodes[nodeID]?.value }
 
     func objectChildren(at path: String = "") -> [String: UInt32] {
