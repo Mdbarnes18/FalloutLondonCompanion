@@ -1,5 +1,9 @@
 # Fallout: London ATTA-Boy Companion
 
+<p align="center">
+  <img src="docs/FalloutLondonCompanion.svg" alt="Fallout London Companion artwork" width="256">
+</p>
+
 Native SwiftUI iPhone/iPad companion for Fallout: London.
 
 - iOS/iPadOS 18+
