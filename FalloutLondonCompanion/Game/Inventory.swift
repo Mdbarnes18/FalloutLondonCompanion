@@ -181,8 +181,8 @@ final class InventoryStore: ObservableObject {
     }
 
     private func categoryFromItem(_ database: PipboyDatabase, path: String) -> InventoryCategory {
-        if database.nodeID(at: "(path).paperdollsection") != nil { return .apparel }
-        if database.nodeID(at: "(path).currenthpgain") != nil { return .aid }
+        if database.nodeID(at: "\(path).paperdollsection") != nil { return .apparel }
+        if database.nodeID(at: "\(path).currenthpgain") != nil { return .aid }
         if database.nodeID(at: "(path).damagerating") != nil || database.nodeID(at: "(path).damage") != nil { return .weapons }
         return .misc
     }
