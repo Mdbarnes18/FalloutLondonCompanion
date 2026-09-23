@@ -9,7 +9,7 @@ struct BootView: View {
             Color.black.ignoresSafeArea()
             VStack(spacing: 12) {
                 Spacer()
-                CRTText(text)
+                CRTText(text: text)
                 Spacer()
             }
             .padding(28)
