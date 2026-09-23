@@ -46,3 +46,42 @@ jobs:
           name: ATTA-Boy-ipa
           path: ${{ runner.temp }}/ATTA-Boy.ipa
           if-no-files-found: error
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          releases="$(gh api --paginate repos/${{ github.repository }}/releases --jq '.[].tag_name' || true)"
+
+          next="1.0"
+          max=0
+
+          while IFS= read -r tag; do
+            case "$tag" in
+              1.*)
+                suffix="${tag#1.}"
+                if [[ "$suffix" =~ ^[0-9]+$ ]]; then
+                  value=$((10#$suffix))
+                  if (( value > max )); then
+                    max=$value
+                  fi
+                fi
+                ;;
+            esac
+          done <<< "$releases"
+
+          if (( max > 0 )); then
+            next=$(printf '1.%02d' "$((max + 1))")
+          fi
+
+          tag="$next"
+          title="ATTA-Boy $next"
+
+          gh release create "$tag" \
+            "$RUNNER_TEMP/ATTA-Boy.ipa" \
+            --title "$title" \
+            --generate-notes \
+            --target ${{ github.sha }}
