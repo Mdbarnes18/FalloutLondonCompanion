@@ -371,13 +371,13 @@ fun DataScreen(db: PipboyDatabase) {
         if (search.isNotBlank()) {
             val q = search.lowercase()
             val matches = db.flattenedValues().filter { (key, value) ->
-                key.lowercase().contains(q) || value.toString().lowercase().contains(q)
+                key.lowercase().contains(q) || value.displayText().lowercase().contains(q)
             }.toSortedMap()
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 Text(matches.size.toString() + " MATCHES", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
                 matches.forEach { (key, value) ->
                     Text(
-                        key + " = " + value,
+                        key + " = " + value.displayText(),
                         color = Phosphor,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 8.sp,
