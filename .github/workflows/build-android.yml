@@ -36,14 +36,18 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --no-daemon
 
+      - name: Name APK
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/Fallout London Companion.apk"
+
       - name: Validate APK
         run: |
-          test -f app/build/outputs/apk/debug/app-debug.apk
-          file app/build/outputs/apk/debug/app-debug.apk
+          test -f "app/build/outputs/apk/debug/Fallout London Companion.apk"
+          file "app/build/outputs/apk/debug/Fallout London Companion.apk"
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v6
         with:
           name: Fallout-London-Companion-android-apk
-          path: Android/app/build/outputs/apk/debug/app-debug.apk
+          path: Android/app/build/outputs/apk/debug/Fallout London Companion.apk
           if-no-files-found: error
