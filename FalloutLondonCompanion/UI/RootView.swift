@@ -90,7 +90,7 @@ struct DataView: View {
                         .font(.system(size: 9, design: .monospaced))
                 }
 
-                DataSection(title: "QUESTS", path: "quests")
+                QuestPanel()
                 DataSection(title: "LOG", path: "log")
                 DataSection(title: "WORKSHOP", path: "workshop")
                 DataSection(title: "PLAYER", path: "playerinfo")
@@ -157,6 +157,14 @@ struct RadioView: View {
                     ForEach(stations) { station in
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
+                                Button {
+                                    app.toggleRadioStation(pipID: station.pipID)
+                                } label: {
+                                    Text(station.active ? "■" : "▶")
+                                        .font(.system(size: 10, design: .monospaced))
+                                }
+                                .buttonStyle(.plain)
+
                                 Text(station.name)
                                     .font(.system(size: 12, design: .monospaced))
                                 Spacer()
@@ -196,7 +204,7 @@ struct RadioView: View {
             let active = bool(at: nodeID, key: "active") ?? false
             let inRange = bool(at: nodeID, key: "inrange") ?? true
             guard inRange || active else { return nil }
-            return RadioStation(id: key, name: name, frequency: frequency, text: text, active: active)
+            return RadioStation(id: key, pipID: nodeID, name: name, frequency: frequency, text: text, active: active)
         }
     }
 
@@ -213,6 +221,7 @@ struct RadioView: View {
 
 private struct RadioStation: Identifiable {
     let id: String
+    let pipID: UInt32
     let name: String
     let frequency: String?
     let text: String?
@@ -261,4 +270,99 @@ struct MapStatusView: View {
         default: return "--"
         }
     }
+}
+
+struct QuestPanel: View {
+    @EnvironmentObject private var app: AppState
+    var body: some View {
+        let quests = questEntries()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("QUESTS").font(.system(size: 13, design: .monospaced))
+                Spacer()
+                Text("\(quests.count) ACTIVE/AVAILABLE").font(.system(size: 8, design: .monospaced)).opacity(0.65)
+            }
+            if quests.isEmpty {
+                Text("NO QUEST DATA RECEIVED").font(.system(size: 8, design: .monospaced)).opacity(0.5)
+            } else {
+                ForEach(quests) { quest in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Button { app.toggleQuest(formID: quest.formID, instance: quest.instance, type: quest.type) } label: {
+                                Text(quest.active ? "ACTIVE" : "SET").font(.system(size: 8, design: .monospaced))
+                            }.buttonStyle(.plain)
+                            Text(quest.name).font(.system(size: 11, design: .monospaced))
+                            Spacer()
+                            if !quest.enabled { Text("DISABLED").font(.system(size: 7, design: .monospaced)).opacity(0.55) }
+                        }
+                        ForEach(quest.objectives) { objective in
+                            HStack(spacing: 5) {
+                                Text(objective.completed ? "✓" : (objective.failed ? "✗" : "·"))
+                                Text(objective.text)
+                            }.font(.system(size: 8, design: .monospaced)).opacity(objective.completed ? 0.5 : 0.82)
+                        }
+                        if let desc = quest.description, !desc.isEmpty {
+                            Text(desc).font(.system(size: 7, design: .monospaced)).opacity(0.55).lineLimit(2)
+                        }
+                    }
+                    .padding(8)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(.green.opacity(quest.active ? 0.5 : 0.2)))
+                }
+            }
+        }
+        .foregroundStyle(.green)
+        .padding(10)
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(.green.opacity(0.25)))
+    }
+    private func questEntries() -> [QuestEntry] {
+        let ids = app.database.arrayChildren(at: app.database.nodeID(at: "quests") ?? 0) ?? []
+        return ids.enumerated().compactMap { index, _ in
+            let path = "quests[\(index)]"
+            guard let name = string(path, "text"), let formID = uint(path, "formid"),
+                  let instance = uint(path, "instance"), let type = uint(path, "type") else { return nil }
+            let objectiveIDs = app.database.arrayChildren(at: app.database.nodeID(at: "\(path).objectives") ?? 0) ?? []
+            let objectives = objectiveIDs.enumerated().compactMap { index, _ -> QuestObjective? in
+                let op = "\(path).objectives[\(index)]"
+                guard let text = string(op, "text") else { return nil }
+                return QuestObjective(text: text, completed: bool(op, "completed") ?? false, failed: bool(op, "failed") ?? false)
+            }
+            return QuestEntry(id: "\(formID)-\(instance)-\(type)", name: name, description: string(path, "desc"),
+                formID: formID, instance: instance, type: type, active: bool(path, "active") ?? false,
+                enabled: bool(path, "enabled") ?? true, objectives: objectives)
+        }
+    }
+    private func string(_ path: String, _ key: String) -> String? {
+        guard case .string(let value) = app.database.value(at: "\(path).\(key)") else { return nil }
+        return value
+    }
+    private func bool(_ path: String, _ key: String) -> Bool? {
+        guard case .bool(let value) = app.database.value(at: "\(path).\(key)") else { return nil }
+        return value
+    }
+    private func uint(_ path: String, _ key: String) -> UInt32? {
+        switch app.database.value(at: "\(path).\(key)") {
+        case .uint32(let value): return value
+        case .int32(let value) where value >= 0: return UInt32(value)
+        case .uint8(let value): return UInt32(value)
+        case .int8(let value) where value >= 0: return UInt32(value)
+        default: return nil
+        }
+    }
+}
+private struct QuestEntry: Identifiable {
+    let id: String
+    let name: String
+    let description: String?
+    let formID: UInt32
+    let instance: UInt32
+    let type: UInt32
+    let active: Bool
+    let enabled: Bool
+    let objectives: [QuestObjective]
+}
+private struct QuestObjective: Identifiable {
+    let id = UUID()
+    let text: String
+    let completed: Bool
+    let failed: Bool
 }

@@ -109,9 +109,9 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db)
+                        MainTab.DATA -> DataScreen(db, connection, scope)
                         MainTab.MAP -> MapScreen(db)
-                        MainTab.RADIO -> RadioScreen(db)
+                        MainTab.RADIO -> RadioScreen(db, connection, scope)
                     }
                 }
 
@@ -319,7 +319,7 @@ fun InventoryScreen(
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
     val context = LocalContext.current
     var path by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
@@ -337,6 +337,7 @@ fun DataScreen(db: PipboyDatabase) {
     }
 
     Column(Modifier.fillMaxSize().padding(2.dp)) {
+        QuestPanel(db, connection, scope)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
             Spacer(Modifier.weight(1f))
@@ -462,7 +463,7 @@ fun MapScreen(db: PipboyDatabase) {
 }
 
 @Composable
-fun RadioScreen(db: PipboyDatabase) {
+fun RadioScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Text("RADIO", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         val stations = db.objectChildren("radio")
@@ -474,19 +475,67 @@ fun RadioScreen(db: PipboyDatabase) {
             val active = (db.objectValue(id, "active") as? PipboyValue.Bool)?.value ?: false
             val inRange = (db.objectValue(id, "inrange") as? PipboyValue.Bool)?.value ?: true
             if (active || inRange) {
-                Text(
-                    key,
-                    color = Phosphor,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(vertical = 6.dp)
-                )
+                Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (active) "■" else "▶", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
+                        modifier = Modifier.clickable { scope.launch { connection.sendRPC(12, listOf(id)) } }.padding(end = 7.dp))
+                    Text(key, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Spacer(Modifier.weight(1f))
+                    if (active) Text("ON AIR", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun QuestPanel(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
+    val questNode = db.nodeId("quests")
+    val questIds = questNode?.let { db.arrayChildren(it) }.orEmpty()
+    Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("QUESTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 13.sp)
+            Spacer(Modifier.weight(1f))
+            Text("${questIds.size} ACTIVE/AVAILABLE", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        questIds.forEachIndexed { index, _ ->
+            val path = "quests[$index]"
+            val name = db.value("$path.text").asString() ?: return@forEachIndexed
+            val form = db.value("$path.formid").asUInt() ?: return@forEachIndexed
+            val instance = db.value("$path.instance").asUInt() ?: return@forEachIndexed
+            val type = db.value("$path.type").asUInt() ?: return@forEachIndexed
+            val active = db.value("$path.active").asBool() ?: false
+            val enabled = db.value("$path.enabled").asBool() ?: true
+            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).border(1.dp, Phosphor.copy(alpha = if (active) .5f else .2f)).padding(7.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (active) "ACTIVE" else "SET", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                        modifier = Modifier.clickable { scope.launch { connection.sendRPC(5, listOf(form, instance, type)) } }.padding(end = 7.dp))
+                    Text(name, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Spacer(Modifier.weight(1f))
+                    if (!enabled) Text("DISABLED", color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+                }
+                val objNode = db.nodeId("$path.objectives")
+                val objIds = objNode?.let { db.arrayChildren(it) }.orEmpty()
+                objIds.forEachIndexed { oi, _ ->
+                    val op = "$path.objectives[$oi]"
+                    val text = db.value("$op.text").asString() ?: return@forEachIndexed
+                    val done = db.value("$op.completed").asBool() ?: false
+                    val failed = db.value("$op.failed").asBool() ?: false
+                    Text((if (done) "✓ " else if (failed) "✗ " else "· ") + text, color = Phosphor.copy(alpha = if (done) .5f else .82f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                }
             }
         }
     }
 }
 
 private fun PipboyValue?.asString() = (this as? PipboyValue.StringValue)?.value
+private fun PipboyValue?.asBool() = (this as? PipboyValue.Bool)?.value
+private fun PipboyValue?.asUInt(): Long? = when (this) {
+    is PipboyValue.UInt32 -> value
+    is PipboyValue.Int32 -> value.toLong().takeIf { it >= 0 }
+    is PipboyValue.UInt8 -> value.toLong()
+    is PipboyValue.Int8 -> value.toLong().takeIf { it >= 0 }
+    else -> null
+}
 
 private fun PipboyValue?.asNumberText(): String = when (this) {
     is PipboyValue.Float32 -> format2(value)

@@ -40,6 +40,14 @@ final class AppState: ObservableObject {
         connectionService.discoverAndConnect()
     }
 
+    func toggleQuest(formID: UInt32, instance: UInt32, type: UInt32) {
+        connectionService.sendRPC(type: 5, args: [formID, instance, type])
+    }
+
+    func toggleRadioStation(pipID: UInt32) {
+        connectionService.sendRPC(type: 12, args: [pipID])
+    }
+
     private func apply(_ update: PipboyUpdate) {
         database.apply(update)
         player = PlayerState.from(database: database, fallback: player)
