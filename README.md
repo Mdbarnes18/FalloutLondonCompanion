@@ -153,10 +153,9 @@ The intended development loop is therefore:
 
 The iOS/iPadOS IPA and Android APK are separate native builds, while the protocol and data contract remain aligned between them.
 
-## Branches and builds
+## Builds
 
-- **main** — stable/release branch
-- **develop** — active development branch
+The project uses `main` as the single source-of-truth branch.
 
 ### iOS / iPadOS build
 
