@@ -54,7 +54,7 @@ fun FalloutLondonApp() {
     var selectedCategory by remember { mutableStateOf(InventoryCategory.WEAPONS) }
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
-    var demoMode by remember { mutableStateOf(contextDemoMode()) }
+    var demoMode by remember { mutableStateOf(loadDemoMode()) }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
@@ -117,7 +117,18 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode)
+                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode) { enabled ->
+                            demoMode = enabled
+                            saveDemoMode(enabled)
+                            if (enabled) {
+                                scope.launch { connection.disconnect() }
+                                loadCachedDatabase(db)
+                                player = PlayerState.from(db, player)
+                                inventory.refresh(db)
+                            } else {
+                                scope.launch { runCatching { connection.discoverAndConnect() } }
+                            }
+                        }
                         MainTab.MAP -> MapScreen(db)
                         MainTab.RADIO -> RadioScreen(db, connection, scope)
                     }
@@ -327,7 +338,7 @@ fun InventoryScreen(
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean, onDemoMode: (Boolean) -> Unit) {
     val context = LocalContext.current
     var path by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
@@ -349,6 +360,8 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(if (demoMode) "DATA BROWSER / DEMO" else "DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
             Spacer(Modifier.weight(1f))
+            Text(if (demoMode) "DEMO" else "LIVE", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                modifier = Modifier.clickable { onDemoMode(!demoMode) }.padding(5.dp))
             Text(if (demoMode) "DEMO CACHE" else "LIVE", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
             Text(
                 if (copied) "COPIED" else "COPY ALL",
@@ -558,7 +571,10 @@ private fun format1(value: Double) = String.format("%.1f", value)
 private fun format2(value: Float) = String.format("%.2f", value)
 
 private lateinit var appContext: android.content.Context
-private fun contextDemoMode(): Boolean = false
+private fun loadDemoMode(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode", false)
+private fun saveDemoMode(value: Boolean) {
+    appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("demoMode", value).apply()
+}
 private fun loadCachedDatabase(db: PipboyDatabase) {
     if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)
         .getString("cache", null)?.let { db.restoreSnapshot(it) }
