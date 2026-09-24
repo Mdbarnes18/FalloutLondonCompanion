@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +57,8 @@ fun FalloutLondonApp() {
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
     var demoMode by remember { mutableStateOf(loadDemoMode()) }
+    var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
+    var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
@@ -119,7 +123,7 @@ fun FalloutLondonApp() {
             Column(Modifier.fillMaxSize()) {
                 CrtFrame {
                     when (selectedTab) {
-                        MainTab.STAT -> StatusScreen(player)
+                        MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold)
                         MainTab.INV -> InventoryScreen(
                             store = inventory,
                             category = selectedCategory,
@@ -225,11 +229,16 @@ fun CrtFrame(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun StatusScreen(player: PlayerState) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
+fun StatusScreen(
+    player: PlayerState,
+    medical: MedicalController,
+    db: PipboyDatabase,
+    connection: PipboyConnection,
+    scope: kotlinx.coroutines.CoroutineScope,
+    autoStimpak: Boolean,
+    threshold: Double
+) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("STAT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Gauge("HP", player.hp, player.maxHp)
         Gauge("AP", player.ap, player.maxAp)
@@ -238,18 +247,34 @@ fun StatusScreen(player: PlayerState) {
         Text("XP   " + format1(player.xpProgress * 100.0) + "%", color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("LEVEL " + player.level + "   PERKS " + player.perkPoints, color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+        Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+                modifier = Modifier.clickable { scope.launch { medical.useStimpak(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+            Text("RADAWAY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+                modifier = Modifier.clickable { scope.launch { medical.useRadAway(db, connection) } }.border(1.dp, Phosphor.copy(alpha=.35f)).padding(6.dp))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Spacer(Modifier.weight(1f))
+            Switch(checked = autoStimpak, onCheckedChange = {
+                medical.autoStimpakEnabled = it
+                saveAutoStimpak(it)
+            })
+        }
+        Text("THRESHOLD " + (threshold * 100).toInt() + "%", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Slider(value = threshold.toFloat(), onValueChange = {
+            val value = it.toDouble()
+            medical.threshold = value
+            saveAutoStimpakThreshold(value)
+        }, valueRange = 0.10f..0.90f, steps = 15)
         player.limbConditions.forEach { entry ->
-            Text(
-                entry.key + "  " + (entry.value * 100.0).toInt() + "%",
-                color = Phosphor.copy(alpha = .75f),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 10.sp
-            )
+            Text(entry.key + "  " + (entry.value * 100.0).toInt() + "%", color = Phosphor.copy(alpha=.75f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
         }
         if (player.activeEffects.isNotEmpty()) {
             Text("EFFECTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
             player.activeEffects.forEach { effect ->
-                Text("• " + effect, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                Text("• " + effect, color = Phosphor.copy(alpha=.8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
         }
     }
@@ -584,6 +609,10 @@ private fun format2(value: Float) = String.format("%.2f", value)
 
 private lateinit var appContext: android.content.Context
 private fun loadDemoMode(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("demoMode", false)
+private fun loadAutoStimpak(): Boolean = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getBoolean("autoStimpak", true)
+private fun saveAutoStimpak(value: Boolean) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("autoStimpak", value).apply() }
+private fun loadAutoStimpakThreshold(): Double = appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).getFloat("autoStimpakThreshold", 0.35f).toDouble()
+private fun saveAutoStimpakThreshold(value: Double) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putFloat("autoStimpakThreshold", value.toFloat()).apply() }
 private fun saveDemoMode(value: Boolean) {
     appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("demoMode", value).apply()
 }
