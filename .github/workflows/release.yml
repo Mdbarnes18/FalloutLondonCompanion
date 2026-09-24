@@ -1,0 +1,107 @@
+name: Release Fallout London Companion
+
+on:
+  workflow_run:
+    workflows:
+      - Build Fallout London Companion IPA
+      - Build Fallout London Companion Android
+    types: [completed]
+    branches: [main, develop]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check both platform builds
+        id: builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          ios_run="$(gh run list --repo "$REPO" --workflow "Build Fallout London Companion IPA" --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          android_run="$(gh run list --repo "$REPO" --workflow "Build Fallout London Companion Android" --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+
+          if [[ -z "$ios_run" || -z "$android_run" ]]; then
+            echo "Both platform builds are not complete for $SHA yet."
+            echo "release_ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ios_run=$ios_run" >> "$GITHUB_OUTPUT"
+          echo "android_run=$android_run" >> "$GITHUB_OUTPUT"
+          echo "release_ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Download iOS IPA artifact
+        if: steps.builds.outputs.release_ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ steps.builds.outputs.ios_run }}
+        run: |
+          set -euo pipefail
+          mkdir -p release/ios
+          gh run download "$RUN_ID"             --repo "$REPO"             --name Fallout-London-Companion-ipa             --dir release/ios
+          test -f "release/ios/Fallout London Companion.ipa"
+
+      - name: Download Android APK artifact
+        if: steps.builds.outputs.release_ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ steps.builds.outputs.android_run }}
+        run: |
+          set -euo pipefail
+          mkdir -p release/android
+          gh run download "$RUN_ID"             --repo "$REPO"             --name Fallout-London-Companion-android-apk             --dir release/android
+          test -f "release/android/app-debug.apk"
+
+      - name: Create combined release
+        if: steps.builds.outputs.release_ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          if gh release view --repo "$REPO" "$SHA" >/dev/null 2>&1; then
+            echo "A release for this commit already exists."
+            exit 0
+          fi
+
+          releases="$(gh api --paginate "repos/$REPO/releases" --jq '.[].tag_name' || true)"
+
+          next="1.0"
+          max=-1
+
+          while IFS= read -r tag; do
+            case "$tag" in
+              1.*)
+                suffix="${tag#1.}"
+                if [[ "$suffix" =~ ^[0-9]+$ ]]; then
+                  value=$((10#$suffix))
+                  if (( value > max )); then
+                    max=$value
+                  fi
+                fi
+                ;;
+            esac
+          done <<< "$releases"
+
+          if (( max >= 0 )); then
+            next=$(printf '1.%02d' "$((max + 1))")
+          fi
+
+          tag="$next"
+          title="Fallout London Companion $next"
+
+          gh release create "$tag"             "release/ios/Fallout London Companion.ipa"             "release/android/app-debug.apk"             --repo "$REPO"             --title "$title"             --generate-notes             --target "$SHA"
