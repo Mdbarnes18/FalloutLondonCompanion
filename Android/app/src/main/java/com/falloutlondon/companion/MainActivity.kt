@@ -62,7 +62,19 @@ fun FalloutLondonApp() {
             player = PlayerState.from(db, player)
             inventory.refresh(db)
         }
-        connection.onState = { state -> scope.launch { connectionState = state } }
+        connection.onState = { state ->
+            scope.launch {
+                connectionState = state
+                if (state == "CONNECTED" && !demoMode) {
+                    // A new TCP session starts a fresh live database stream.
+                    // Drop stale values from the previous session before applying
+                    // the first live update.
+                    db.reset()
+                    player = PlayerState()
+                    inventory.refresh(db)
+                }
+            }
+        }
         connection.onUpdate = { update ->
             scope.launch {
                 db.apply(update)
