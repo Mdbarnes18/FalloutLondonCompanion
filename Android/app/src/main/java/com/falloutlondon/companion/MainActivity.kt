@@ -243,7 +243,7 @@ fun InventoryScreen(
     category: InventoryCategory,
     onCategory: (InventoryCategory) -> Unit
 ) {
-    var selectedId by remember { mutableStateOf<Long?>(null) }
+    var selectedId by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         Text("INV", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
