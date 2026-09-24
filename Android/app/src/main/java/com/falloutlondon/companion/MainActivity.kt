@@ -1,8 +1,13 @@
 package com.falloutlondon.companion
 
 import android.os.Bundle
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -312,30 +320,126 @@ fun InventoryScreen(
 
 @Composable
 fun DataScreen(db: PipboyDatabase) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Text("DATA", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
-        listOf(
-            "QUESTS" to "quests",
-            "LOG" to "log",
-            "WORKSHOP" to "workshop",
-            "PLAYER" to "playerinfo"
-        ).forEach { section ->
-            val children = db.objectChildren(section.second)
+    val context = LocalContext.current
+    var path by remember { mutableStateOf("") }
+    var search by remember { mutableStateOf("") }
+    var copied by remember { mutableStateOf(false) }
+    val export = remember(db.nodes.size, db.localMap) { db.exportText() }
+
+    val saveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            context.contentResolver.openOutputStream(uri)?.use {
+                it.write(export.toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
+
+    Column(Modifier.fillMaxSize().padding(2.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
+            Spacer(Modifier.weight(1f))
             Text(
-                section.first + "  " + children.size + " NODES",
+                if (copied) "COPIED" else "COPY ALL",
                 color = Phosphor,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                modifier = Modifier.padding(vertical = 7.dp)
+                fontSize = 8.sp,
+                modifier = Modifier.clickable {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Fallout London data", export))
+                    copied = true
+                }.padding(5.dp)
             )
-            children.keys.sorted().take(8).forEach { key ->
-                Text(
-                    "• " + key.uppercase(),
-                    color = Phosphor.copy(alpha = .8f),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 9.sp
-                )
+            Text(
+                "SAVE TXT",
+                color = Phosphor,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 8.sp,
+                modifier = Modifier.clickable { saveLauncher.launch("Fallout-London-Data.txt") }.padding(5.dp)
+            )
+        }
+
+        TextField(
+            value = search,
+            onValueChange = { search = it },
+            singleLine = true,
+            placeholder = { Text("SEARCH PATH / VALUE", fontFamily = FontFamily.Monospace, fontSize = 9.sp) },
+            modifier = Modifier.fillMaxWidth().height(48.dp)
+        )
+
+        if (search.isNotBlank()) {
+            val q = search.lowercase()
+            val matches = db.flattenedValues().filter { (key, value) ->
+                key.lowercase().contains(q) || value.toString().lowercase().contains(q)
+            }.toSortedMap()
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                Text(matches.size.toString() + " MATCHES", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                matches.forEach { (key, value) ->
+                    Text(
+                        key + " = " + value,
+                        color = Phosphor,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 8.sp,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
             }
+        } else {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                if (path.isNotEmpty()) {
+                    Text(
+                        "‹ ROOT",
+                        color = Phosphor,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 9.sp,
+                        modifier = Modifier.clickable { path = "" }.padding(vertical = 5.dp)
+                    )
+                }
+                val children = db.objectChildren(path).toSortedMap()
+                val arrayChildren = db.nodeId(path)?.let { db.arrayChildren(it) } ?: emptyList()
+                if (children.isEmpty() && arrayChildren.isEmpty()) {
+                    Text(
+                        path + " = " + (db.value(path) ?: ""),
+                        color = Phosphor,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 9.sp
+                    )
+                } else {
+                    children.forEach { (key, _) ->
+                        val childPath = if (path.isEmpty()) key else path + "." + key
+                        DataBrowserRow(db, key.uppercase(), childPath, 0) { path = it }
+                    }
+                    arrayChildren.forEachIndexed { index, _ ->
+                        val childPath = path + "[" + index + "]"
+                        DataBrowserRow(db, "[" + index + "]", childPath, 0) { path = it }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DataBrowserRow(
+    db: PipboyDatabase,
+    title: String,
+    path: String,
+    depth: Int,
+    open: (String) -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable { open(path) }.padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("  ".repeat(depth) + "› " + title, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        Spacer(Modifier.weight(1f))
+        val value = db.value(path)
+        if (value != null) {
+            Text(value.toString(), color = Phosphor.copy(alpha = .65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp, maxLines = 1)
+        } else {
+            val count = db.objectChildren(path).size + (db.nodeId(path)?.let { db.arrayChildren(it).size } ?: 0)
+            Text(count.toString(), color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
     }
 }
