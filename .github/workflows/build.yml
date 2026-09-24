@@ -1,8 +1,5 @@
 name: Build Fallout London Companion IPA
 
-permissions:
-  contents: write
-
 on:
   push:
     branches: [ main, develop ]
@@ -55,41 +52,3 @@ jobs:
           path: ${{ runner.temp }}/Fallout London Companion.ipa
           if-no-files-found: error
 
-      - name: Create GitHub release
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          releases="$(gh api --paginate repos/${{ github.repository }}/releases --jq '.[].tag_name' || true)"
-
-          next="1.0"
-          max=-1
-
-          while IFS= read -r tag; do
-            case "$tag" in
-              1.*)
-                suffix="${tag#1.}"
-                if [[ "$suffix" =~ ^[0-9]+$ ]]; then
-                  value=$((10#$suffix))
-                  if (( value > max )); then
-                    max=$value
-                  fi
-                fi
-                ;;
-            esac
-          done <<< "$releases"
-
-          if (( max >= 0 )); then
-            next=$(printf '1.%02d' "$((max + 1))")
-          fi
-
-          tag="$next"
-          title="Fallout London Companion $next"
-
-          gh release create "$tag" \
-            "$RUNNER_TEMP/Fallout London Companion.ipa" \
-            --title "$title" \
-            --generate-notes \
-            --target ${{ github.sha }}
