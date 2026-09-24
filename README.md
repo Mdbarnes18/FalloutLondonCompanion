@@ -164,6 +164,9 @@ The IPA is intended for SideStore/device testing.
 - [ ] Persistent cache / Demo Mode
 - [ ] Settings
 - [ ] Device testing and polish
+- [x] Android project foundation and parallel CI APK build
+- [x] Android protocol/database/player/inventory/medical foundation
+- [x] Android STAT/INV/DATA/MAP/RADIO UI foundation
 
 ## Development workflow
 
