@@ -9,7 +9,12 @@ import java.net.InetAddress
 import java.net.Socket
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -120,6 +125,12 @@ class PipboyDatabase {
     var localMap: PipboyLocalMapUpdate? = null
         private set
 
+    fun reset() {
+        nodes.clear()
+        nodes[0L] = Node(0L)
+        localMap = null
+    }
+
     fun apply(update: PipboyUpdate) {
         when (update) {
             is PipboyUpdate.Data -> update.records.forEach(::apply)
@@ -153,6 +164,9 @@ class PipboyDatabase {
     fun objectValue(id: Long, key: String): PipboyValue? =
         nodes[id]?.objectChildren?.get(key)?.let { nodes[it]?.value }
 
+    fun valueAtNode(id: Long): PipboyValue? = nodes[id]?.value
+    fun arrayChildren(id: Long): List<Long> = nodes[id]?.arrayChildren.orEmpty()
+
     fun nodeId(path: String): Long? {
         if (path.isBlank()) return 0L
         var current = 0L
@@ -163,6 +177,7 @@ class PipboyDatabase {
                 val base = key.substring(0, open)
                 if (base.isNotEmpty()) current = nodes[current]?.objectChildren?.get(base) ?: return null
                 val close = key.indexOf(']', open)
+                if (close < 0) return null
                 val index = key.substring(open + 1, close).toIntOrNull() ?: return null
                 current = nodes[current]?.arrayChildren?.getOrNull(index) ?: return null
                 key = key.substring(close + 1)
@@ -178,6 +193,7 @@ class PipboyConnection {
     var onUpdate: ((PipboyUpdate) -> Unit)? = null
     private var socket: Socket? = null
     private var rpcId = 1L
+    private var heartbeatJob: Job? = null
 
     suspend fun discoverAndConnect() = withContext(Dispatchers.IO) {
         onState?.invoke("DISCOVERING")
@@ -201,12 +217,17 @@ class PipboyConnection {
 
     suspend fun connect(host: String) = withContext(Dispatchers.IO) {
         onState?.invoke("CONNECTING")
+        heartbeatJob?.cancel()
+        socket?.close()
         socket = Socket(host, 27000)
         onState?.invoke("CONNECTED")
+        startHeartbeat()
         receiveLoop(socket!!)
+        heartbeatJob?.cancel()
     }
 
     suspend fun disconnect() = withContext(Dispatchers.IO) {
+        heartbeatJob?.cancel()
         socket?.close()
         socket = null
         onState?.invoke("DISCONNECTED")
@@ -221,10 +242,21 @@ class PipboyConnection {
         sendFrame(5, json)
     }
 
+    private fun startHeartbeat() {
+        heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+            while (isActive) {
+                delay(20_000)
+                runCatching { sendFrame(0, ByteArray(0)) }
+            }
+        }
+    }
+
     private fun sendFrame(type: Int, payload: ByteArray) {
         val out = socket?.getOutputStream() ?: return
         val header = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN).putInt(payload.size).put(type.toByte()).array()
-        out.write(header); out.write(payload); out.flush()
+        out.write(header)
+        out.write(payload)
+        out.flush()
     }
 
     private fun receiveLoop(s: Socket) {
@@ -241,5 +273,6 @@ class PipboyConnection {
             if (type == 0) sendFrame(0, ByteArray(0))
             else PipboyPacketDecoder.decode(type, payload)?.let { onUpdate?.invoke(it) }
         }
+        onState?.invoke("DISCONNECTED")
     }
 }
