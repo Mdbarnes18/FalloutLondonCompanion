@@ -123,10 +123,16 @@ fun FalloutLondonApp() {
             Column(Modifier.fillMaxSize()) {
                 CrtFrame {
                     when (selectedTab) {
-                        MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold) { value ->
-                            stimpakThreshold = value
-                            saveAutoStimpakThreshold(value)
-                        }
+                        MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold,
+                            onAutoStimpakChanged = { enabled ->
+                                autoStimpak = enabled
+                                saveAutoStimpak(enabled)
+                            },
+                            onThresholdChanged = { value ->
+                                stimpakThreshold = value
+                                saveAutoStimpakThreshold(value)
+                            }
+                        )
                         MainTab.INV -> InventoryScreen(
                             store = inventory,
                             category = selectedCategory,
@@ -240,6 +246,7 @@ fun StatusScreen(
     scope: kotlinx.coroutines.CoroutineScope,
     autoStimpak: Boolean,
     threshold: Double,
+    onAutoStimpakChanged: (Boolean) -> Unit,
     onThresholdChanged: (Double) -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -262,9 +269,8 @@ fun StatusScreen(
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f))
             Switch(checked = autoStimpak, onCheckedChange = {
-                autoStimpak = it
                 medical.autoStimpakEnabled = it
-                saveAutoStimpak(it)
+                onAutoStimpakChanged(it)
             })
         }
         Text("THRESHOLD " + (threshold * 100).toInt() + "%", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
