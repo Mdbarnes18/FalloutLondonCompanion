@@ -48,4 +48,4 @@ A protocol or data-model change should be designed against the shared contract f
 
 ## Current status
 
-Android workspace reserved. Full Android implementation has not started.
+Android foundation is now mirrored through the current iOS feature boundary: project/build setup, locked icon reuse, boot presentation, protocol transport/decoder, database object graph, player/STAT model, inventory model, Auto-Stimpak controller, DATA, MAP and RADIO views are present. Android still requires device validation and deeper parity work for controls, full RPC actions, cache/Demo Mode, character animation, audio, haptics and full map rendering.
