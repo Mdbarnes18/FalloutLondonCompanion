@@ -12,6 +12,10 @@ permissions:
   actions: read
   contents: write
 
+concurrency:
+  group: combined-release-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
 jobs:
   release:
     if: github.event.workflow_run.conclusion == 'success'
@@ -73,8 +77,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          if gh release view --repo "$REPO" "$SHA" >/dev/null 2>&1; then
-            echo "A release for this commit already exists."
+          existing="$(gh api --paginate "repos/$REPO/releases" --jq ".[] | select(.target_commitish == \"$SHA\") | .tag_name" | head -n 1 || true)"
+          if [[ -n "$existing" ]]; then
+            echo "Release $existing already exists for $SHA."
             exit 0
           fi
 
