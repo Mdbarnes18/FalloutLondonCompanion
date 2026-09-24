@@ -155,8 +155,6 @@ The iOS/iPadOS IPA and Android APK are separate native builds, while the protoco
 
 ## Builds
 
-The project uses `main` as the single source-of-truth branch.
-
 ### iOS / iPadOS build
 
 GitHub Actions builds the unsigned iOS/iPadOS application on macOS and packages:
