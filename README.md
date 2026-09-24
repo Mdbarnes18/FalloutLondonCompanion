@@ -134,7 +134,7 @@ The project runs as four native device targets while keeping the game-facing beh
 2. Push changes to GitHub.
 3. GitHub Actions builds the unsigned iOS/iPadOS application on macOS.
 4. CI validates and packages `Fallout London Companion.ipa`.
-5. Install the IPA through SideStore.
+5. Install the IPA through your preferred iOS device installation method.
 6. Test on a physical iPhone or iPad.
 7. Fix, refine, commit, push, and repeat.
 
@@ -164,7 +164,7 @@ GitHub Actions builds the unsigned iOS/iPadOS application on macOS and packages:
 
 `Fallout London Companion.ipa`
 
-The IPA is intended for SideStore/device testing.
+The IPA is intended for iOS/iPadOS device testing.
 
 ### Android build
 
