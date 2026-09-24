@@ -287,43 +287,34 @@ class PipboyDatabase {
 class PipboyConnection {
     var onState: ((String) -> Unit)? = null
     var onUpdate: ((PipboyUpdate) -> Unit)? = null
+
     private var socket: Socket? = null
     private var rpcId = 1L
     private var heartbeatJob: Job? = null
+    private var reconnectJob: Job? = null
+    private var manualDisconnect = false
+    private var reconnectAttempt = 0
 
     suspend fun discoverAndConnect() = withContext(Dispatchers.IO) {
-        onState?.invoke("DISCOVERING")
-        DatagramSocket().use { udp ->
-            udp.broadcast = true
-            udp.soTimeout = 5000
-            val request = """{"cmd":"autodiscover"}""".toByteArray()
-            udp.send(DatagramPacket(request, request.size, InetAddress.getByName("255.255.255.255"), 28000))
-            val buffer = ByteArray(8192)
-            val packet = DatagramPacket(buffer, buffer.size)
-            udp.receive(packet)
-            val response = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
-            val host = runCatching {
-                val json = JSONObject(response)
-                listOf("ip", "host", "address", "gameIP", "gameIp")
-                    .firstNotNullOfOrNull { json.optString(it).takeIf(String::isNotBlank) }
-            }.getOrNull() ?: response.trim().substringBefore(":")
-            connect(host)
-        }
+        manualDisconnect = false
+        reconnectAttempt = 0
+        reconnectJob?.cancel()
+        discoverOnce()
     }
 
     suspend fun connect(host: String) = withContext(Dispatchers.IO) {
-        onState?.invoke("CONNECTING")
-        heartbeatJob?.cancel()
-        socket?.close()
-        socket = Socket(host, 27000)
-        onState?.invoke("CONNECTED")
-        startHeartbeat()
-        receiveLoop(socket!!)
-        heartbeatJob?.cancel()
+        manualDisconnect = false
+        reconnectAttempt = 0
+        reconnectJob?.cancel()
+        connectOnce(host)
     }
 
     suspend fun disconnect() = withContext(Dispatchers.IO) {
+        manualDisconnect = true
+        reconnectJob?.cancel()
+        reconnectJob = null
         heartbeatJob?.cancel()
+        heartbeatJob = null
         socket?.close()
         socket = null
         onState?.invoke("DISCONNECTED")
@@ -335,21 +326,79 @@ class PipboyConnection {
             put("type", type)
             put("args", JSONArray(args))
         }.toString().toByteArray()
-        sendFrame(5, json)
+        runCatching { sendFrame(5, json) }
+            .onFailure { handleConnectionFailure("RPC: " + (it.message ?: "send failed")) }
+    }
+
+    private suspend fun discoverOnce() {
+        if (manualDisconnect) return
+        onState?.invoke("DISCOVERING")
+        runCatching {
+            DatagramSocket().use { udp ->
+                udp.broadcast = true
+                udp.soTimeout = 5000
+                val request = """{"cmd":"autodiscover"}""".toByteArray()
+                udp.send(DatagramPacket(request, request.size, InetAddress.getByName("255.255.255.255"), 28000))
+                val buffer = ByteArray(8192)
+                val packet = DatagramPacket(buffer, buffer.size)
+                udp.receive(packet)
+                val response = String(packet.data, packet.offset, packet.length, Charsets.UTF_8)
+                val host = runCatching {
+                    val json = JSONObject(response)
+                    listOf("ip", "host", "address", "gameIP", "gameIp")
+                        .firstNotNullOfOrNull { json.optString(it).takeIf(String::isNotBlank) }
+                }.getOrNull() ?: response.trim().substringBefore(":")
+                require(host.isNotBlank()) { "Unrecognized autodiscovery response" }
+                connectOnce(host)
+            }
+        }.onFailure { error ->
+            handleConnectionFailure("Discovery: " + (error.message ?: "failed"))
+        }
+    }
+
+    private suspend fun connectOnce(host: String) {
+        if (manualDisconnect) return
+        onState?.invoke(if (reconnectAttempt == 0) "CONNECTING" else "RECONNECTING")
+        heartbeatJob?.cancel()
+        socket?.close()
+        val newSocket = Socket()
+        socket = newSocket
+        try {
+            newSocket.connect(java.net.InetSocketAddress(host, 27000), 5000)
+            if (manualDisconnect) {
+                newSocket.close()
+                return
+            }
+            reconnectAttempt = 0
+            onState?.invoke("CONNECTED")
+            startHeartbeat()
+            receiveLoop(newSocket)
+        } catch (error: Exception) {
+            handleConnectionFailure("TCP: " + (error.message ?: "connection failed"))
+        } finally {
+            if (socket === newSocket) {
+                runCatching { newSocket.close() }
+                socket = null
+            }
+            heartbeatJob?.cancel()
+        }
     }
 
     private fun startHeartbeat() {
+        heartbeatJob?.cancel()
         heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 delay(20_000)
                 runCatching { sendFrame(0, ByteArray(0)) }
+                    .onFailure { handleConnectionFailure("Heartbeat: " + (it.message ?: "failed")) }
             }
         }
     }
 
     private fun sendFrame(type: Int, payload: ByteArray) {
-        val out = socket?.getOutputStream() ?: return
-        val header = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN).putInt(payload.size).put(type.toByte()).array()
+        val out = socket?.getOutputStream() ?: error("Socket unavailable")
+        val header = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN)
+            .putInt(payload.size).put(type.toByte()).array()
         out.write(header)
         out.write(payload)
         out.flush()
@@ -357,18 +406,46 @@ class PipboyConnection {
 
     private fun receiveLoop(s: Socket) {
         val input = s.getInputStream()
-        while (!s.isClosed) {
+        while (!manualDisconnect && !s.isClosed) {
             val header = input.readNBytes(5)
             if (header.size < 5) break
             val h = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
             val size = h.int
             val type = h.get().toInt() and 0xFF
-            if (size !in 0..(16 * 1024 * 1024)) break
+            if (size !in 0..(16 * 1024 * 1024)) {
+                handleConnectionFailure("Invalid packet size")
+                break
+            }
             val payload = input.readNBytes(size)
             if (payload.size != size) break
-            if (type == 0) sendFrame(0, ByteArray(0))
-            else PipboyPacketDecoder.decode(type, payload)?.let { onUpdate?.invoke(it) }
+            if (type == 0) {
+                runCatching { sendFrame(0, ByteArray(0)) }
+                    .onFailure { handleConnectionFailure("Heartbeat response: " + (it.message ?: "failed")) }
+            } else {
+                PipboyPacketDecoder.decode(type, payload)?.let { onUpdate?.invoke(it) }
+            }
         }
-        onState?.invoke("DISCONNECTED")
+        if (!manualDisconnect) handleConnectionFailure("Connection closed")
+    }
+
+    private fun handleConnectionFailure(reason: String) {
+        if (manualDisconnect) return
+        heartbeatJob?.cancel()
+        onState?.invoke("FAILED: $reason")
+        scheduleReconnect()
+    }
+
+    private fun scheduleReconnect() {
+        if (manualDisconnect || reconnectJob?.isActive == true) return
+        reconnectAttempt += 1
+        val delayMs = minOf(30_000L, 1_000L shl minOf(reconnectAttempt - 1, 5))
+        onState?.invoke("RECONNECTING")
+        reconnectJob = CoroutineScope(Dispatchers.IO).launch {
+            delay(delayMs)
+            if (!manualDisconnect) {
+                reconnectJob = null
+                discoverOnce()
+            }
+        }
     }
 }
