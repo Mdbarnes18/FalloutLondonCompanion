@@ -10,6 +10,28 @@ struct StatusView: View {
             Text(String(format: "WT   %05.1f / %05.1f", app.player.carryWeight, app.player.maxWeight)).font(.system(size: 14, design: .monospaced))
             ProgressView(value: app.player.xpProgress).tint(.green)
             Text("SPECIAL   " + app.player.special.map(String.init).joined(separator: " ")).font(.system(size: 12, design: .monospaced))
+            VStack(alignment: .leading, spacing: 7) {
+                Text("MEDICAL").font(.system(size: 11, design: .monospaced))
+                HStack(spacing: 8) {
+                    Button("STIMPAK") { app.useStimpak() }
+                    Button("RADAWAY") { app.useRadAway() }
+                }
+                .buttonStyle(.bordered)
+                .font(.system(size: 9, design: .monospaced))
+                Toggle("AUTO-STIMPAK", isOn: Binding(
+                    get: { app.medical.autoStimpakEnabled },
+                    set: { app.setAutoStimpakEnabled($0) }
+                ))
+                .font(.system(size: 9, design: .monospaced))
+                HStack {
+                    Text("THRESHOLD \(Int(app.medical.threshold * 100))%")
+                    Slider(value: Binding(
+                        get: { app.medical.threshold },
+                        set: { app.setAutoStimpakThreshold($0) }
+                    ), in: 0.10...0.90, step: 0.05)
+                }
+                .font(.system(size: 8, design: .monospaced))
+            }
             Spacer()
         }.foregroundStyle(.green).padding()
     }
