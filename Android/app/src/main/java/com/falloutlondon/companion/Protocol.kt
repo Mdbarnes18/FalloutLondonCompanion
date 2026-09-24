@@ -23,6 +23,7 @@ sealed interface PipboyUpdate {
     data class Data(val records: List<PipboyRecord>) : PipboyUpdate
     data class LocalMap(val map: PipboyLocalMapUpdate) : PipboyUpdate
     data class CommandResponse(val json: String) : PipboyUpdate
+    data class Unknown(val type: Int, val payload: ByteArray) : PipboyUpdate
 }
 
 data class PipboyLocalMapUpdate(
@@ -56,7 +57,7 @@ object PipboyPacketDecoder {
         3 -> PipboyUpdate.Data(decodeDataUpdate(payload))
         4 -> decodeLocalMap(payload)?.let(PipboyUpdate::LocalMap)
         6 -> PipboyUpdate.CommandResponse(payload.toString(Charsets.UTF_8))
-        else -> null
+        else -> PipboyUpdate.Unknown(type, payload)
     }
 
     private fun decodeDataUpdate(bytes: ByteArray): List<PipboyRecord> {
@@ -136,6 +137,7 @@ class PipboyDatabase {
             is PipboyUpdate.Data -> update.records.forEach(::apply)
             is PipboyUpdate.LocalMap -> localMap = update.map
             is PipboyUpdate.CommandResponse -> Unit
+            is PipboyUpdate.Unknown -> Unit
         }
     }
 
@@ -164,8 +166,32 @@ class PipboyDatabase {
     fun objectValue(id: Long, key: String): PipboyValue? =
         nodes[id]?.objectChildren?.get(key)?.let { nodes[it]?.value }
 
+    fun objectNodeId(id: Long, key: String): Long? = nodes[id]?.objectChildren?.get(key)
+    fun objectChildrenAtNode(id: Long): Map<String, Long> = nodes[id]?.objectChildren?.toMap() ?: emptyMap()
+
     fun valueAtNode(id: Long): PipboyValue? = nodes[id]?.value
     fun arrayChildren(id: Long): List<Long> = nodes[id]?.arrayChildren.orEmpty()
+
+    fun firstObjectPath(arrayPath: String, key: String, expected: PipboyValue): String? {
+        val arrayId = nodeId(arrayPath) ?: return null
+        arrayChildren(arrayId).forEachIndexed { index, childId ->
+            val valueId = objectNodeId(childId, key) ?: return@forEachIndexed
+            if (valueAtNode(valueId) == expected) return "$arrayPath[$index]"
+        }
+        return null
+    }
+
+    fun flattenedValues(prefix: String = ""): Map<String, PipboyValue> {
+        val result = mutableMapOf<String, PipboyValue>()
+        fun walk(id: Long, path: String) {
+            val node = nodes[id] ?: return
+            node.value?.let { if (path.isNotEmpty()) result[path] = it }
+            node.objectChildren.forEach { (key, child) -> walk(child, if (path.isEmpty()) key else "$path.$key") }
+            node.arrayChildren.forEachIndexed { index, child -> walk(child, "$path[$index]") }
+        }
+        walk(0L, prefix)
+        return result
+    }
 
     fun nodeId(path: String): Long? {
         if (path.isBlank()) return 0L
