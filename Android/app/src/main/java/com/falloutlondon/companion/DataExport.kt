@@ -1,6 +1,6 @@
 package com.falloutlondon.companion
 
-fun PipboyDatabase.exportText(): String {
+fun PipboyValue.displayText(): String = when (this) {\n    is PipboyValue.Bool -> value.toString()\n    is PipboyValue.Int8 -> value.toString()\n    is PipboyValue.UInt8 -> value.toString()\n    is PipboyValue.Int32 -> value.toString()\n    is PipboyValue.UInt32 -> value.toString()\n    is PipboyValue.Float32 -> value.toString()\n    is PipboyValue.StringValue -> value.replace("\\n", "\\\\n")\n    PipboyValue.Null -> "null"\n}\n\nfun PipboyDatabase.exportText(): String {
     val out = StringBuilder()
     out.appendLine("FALLOUT: LONDON ATTA-BOY DATA EXPORT")
     out.appendLine("Generated from the current live database")
