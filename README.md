@@ -170,7 +170,7 @@ The IPA is intended for SideStore/device testing.
 
 GitHub Actions builds the Android application and uploads:
 
-`app-debug.apk`
+`Fallout London Companion.apk`
 
 The APK is intended for Android phone/tablet device testing.
 
