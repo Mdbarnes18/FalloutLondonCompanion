@@ -258,6 +258,7 @@ fun StatusScreen(
             Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Spacer(Modifier.weight(1f))
             Switch(checked = autoStimpak, onCheckedChange = {
+                autoStimpak = it
                 medical.autoStimpakEnabled = it
                 saveAutoStimpak(it)
             })
@@ -265,6 +266,7 @@ fun StatusScreen(
         Text("THRESHOLD " + (threshold * 100).toInt() + "%", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Slider(value = threshold.toFloat(), onValueChange = {
             val value = it.toDouble()
+            stimpakThreshold = value
             medical.threshold = value
             saveAutoStimpakThreshold(value)
         }, valueRange = 0.10f..0.90f, steps = 15)
