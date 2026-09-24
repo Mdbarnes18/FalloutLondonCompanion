@@ -42,6 +42,11 @@ jobs:
           cp -R "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/ATTA-Boy.app" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
           /usr/bin/zip -qry "Fallout London Companion.ipa" Payload
+          unzip -tq "Fallout London Companion.ipa"
+          test -f "Payload/ATTA-Boy.app/ATTA-Boy"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "Payload/ATTA-Boy.app/Info.plist"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "Payload/ATTA-Boy.app/Info.plist"
+          /usr/bin/file "Payload/ATTA-Boy.app/ATTA-Boy"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v6
