@@ -59,7 +59,7 @@ enum class MainTab(val label: String) { STAT("STAT"), INV("INV"), DATA("DATA"), 
 enum class InventoryCategory(val label: String) { WEAPONS("WEAPONS"), APPAREL("APPAREL"), AID("AID"), MISC("MISC"), JUNK("JUNK"), AMMO("AMMO") }
 
 data class InventoryItem(
-    val id: Long,
+    val id: String,
     val name: String,
     val count: Int,
     val equipped: Boolean,
@@ -71,7 +71,11 @@ data class InventoryItem(
     val armor: Double?,
     val radiationResistance: Double?,
     val energyResistance: Double?,
-    val description: String?
+    val description: String?,
+    val formId: Long?,
+    val handleId: Long?,
+    val stackIds: List<Long>,
+    val category: InventoryCategory
 )
 
 class InventoryStore {
