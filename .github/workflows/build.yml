@@ -1,0 +1,54 @@
+name: Build Fallout London Companion IPA
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: atta-boy-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Show Xcode
+        run: xcodebuild -version
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild build \
+            -project FalloutLondonCompanion.xcodeproj \
+            -scheme ATTA-Boy \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package IPA
+        run: |
+          rm -rf "$RUNNER_TEMP/Payload"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/ATTA-Boy.app" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          /usr/bin/zip -qry "Fallout London Companion.ipa" Payload
+          unzip -tq "Fallout London Companion.ipa"
+          test -f "Payload/ATTA-Boy.app/ATTA-Boy"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "Payload/ATTA-Boy.app/Info.plist"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "Payload/ATTA-Boy.app/Info.plist"
+          /usr/bin/file "Payload/ATTA-Boy.app/ATTA-Boy"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fallout-London-Companion-ipa
+          path: ${{ runner.temp }}/Fallout London Companion.ipa
+          if-no-files-found: error
+
