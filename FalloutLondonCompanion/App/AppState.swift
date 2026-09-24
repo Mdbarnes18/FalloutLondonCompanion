@@ -22,7 +22,17 @@ final class AppState: ObservableObject {
             inventory.refresh(from: database)
         }
         connectionService.onStateChange = { [weak self] state in
-            Task { @MainActor in self?.connection = state }
+            Task { @MainActor in
+                guard let self else { return }
+                self.connection = state
+                if state == .connected && !self.demoMode {
+                    // A fresh TCP session starts a fresh database stream. Do not
+                    // let values from a previous save/session survive a reconnect.
+                    self.database.reset()
+                    self.player = PlayerState.demo
+                    self.inventory.refresh(from: self.database)
+                }
+            }
         }
         connectionService.onUpdate = { [weak self] update in
             Task { @MainActor in self?.apply(update) }
