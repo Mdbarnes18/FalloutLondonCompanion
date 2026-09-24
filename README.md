@@ -125,8 +125,6 @@ WITH THANKS TO TEAM FOLON
 
 Fallout: London is a Team FOLON project. This companion is a separate application and does not imply endorsement or affiliation.
 
-Private correspondence or private Discord screenshots are not included in the repository.
-
 ## Platform flow
 
 The project runs as four native device targets while keeping the game-facing behavior aligned:
