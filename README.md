@@ -1,6 +1,6 @@
 # Fallout London Companion
 
-Native SwiftUI iPhone/iPad companion for Fallout: London, built around the game's ATTA-Boy/Pip-Boy companion protocol, with a planned parallel Android implementation.
+Native companion app for Fallout: London, with matching native clients for iPhone, iPad, Android phones, and Android tablets. The clients share the same verified Fallout 4/Fallout: London companion-protocol behavior while using platform-native UI and build pipelines.
 
 <p align="center">
   <img src="docs/FalloutLondonCompanion.svg" alt="Fallout London Companion artwork" width="256">
@@ -8,6 +8,7 @@ Native SwiftUI iPhone/iPad companion for Fallout: London, built around the game'
 
 ## Current build
 
+### iOS / iPadOS
 - iOS/iPadOS 18+
 - iPhone + iPad
 - Portrait + landscape
@@ -24,15 +25,36 @@ Native SwiftUI iPhone/iPad companion for Fallout: London, built around the game'
 - Inventory categories and item parsing
 - Manual Stimpak/RadAway protocol paths
 - Configurable Auto-Stimpak threshold
-- GitHub Actions macOS IPA builds for SideStore testing
+
+### Android
+- Android phones + tablets
+- Kotlin + Jetpack Compose
+- Portrait + landscape
+- Responsive platform-native layout
+- ATTA-Boy shell and CRT presentation
+- Physical-style boot sequence
+- WITH THANKS TO TEAM FOLON boot credit
+- UDP/TCP protocol connection foundation
+- Binary database/update decoding
+- Local-map packet decoding
+- RPC command envelope
+- Live STAT/player data foundation
+- Inventory categories and item parsing
+- Manual Stimpak/RadAway protocol paths
+- Configurable Auto-Stimpak threshold
+- GitHub Actions APK builds
 
 ## Interface
 
-- STAT — HP, AP, radiation/limb state, SPECIAL, XP and effects foundation.
-- INV — Weapons, Apparel, Aid, Misc, Junk and Ammo with item metadata, favorites and inventory-state parsing.
-- DATA — Quest, log, workshop and player database data foundation.
-- MAP — Fallout: London worldspace/player-position data and local-map snapshot status.
-- RADIO — Station state, frequency/text fields and active/in-range state when exposed by the game.
+Both clients follow the same core interface:
+
+- **STAT** — HP, AP, radiation/limb state, SPECIAL, XP and effects foundation.
+- **INV** — Weapons, Apparel, Aid, Misc, Junk and Ammo with item metadata, favorites and inventory-state parsing.
+- **DATA** — Quest, log, workshop and player database data foundation.
+- **MAP** — Fallout: London worldspace/player-position data and local-map snapshot status.
+- **RADIO** — Station state, frequency/text fields and active/in-range state when exposed by the game.
+
+Platform-specific presentation can differ where Android and Apple UI conventions require it, but game data, protocol behavior, and supported functionality are kept aligned.
 
 ## Protocol
 
@@ -68,7 +90,7 @@ Auto-Doc remains a research item until a supported protocol path is verified.
 
 The protocol layer decodes local-map snapshots and coordinate extents.
 
-The planned map system uses one shared coordinate system for:
+The map system uses one shared coordinate system for:
 
 1. Original Fallout: London presentation
 2. Enhanced readable/color presentation
@@ -105,33 +127,58 @@ Fallout: London is a Team FOLON project. This companion is a separate applicatio
 
 Private correspondence or private Discord screenshots are not included in the repository.
 
-## Platform structure
+## Platform flow
 
-The repository is structured for two native clients sharing one verified behavioral contract:
+The project runs as four native device targets while keeping the game-facing behavior aligned:
 
-- **iOS/iPadOS** — primary implementation, SwiftUI, Xcode, IPA/SideStore workflow.
-- **Android** — secondary implementation track, Kotlin and Jetpack Compose.
-- **Shared contract** — protocol framing, data-model behavior, RPC definitions, captures, test data and verification requirements.
+**iPhone / iPad**
+1. Develop the shared game/protocol behavior in the SwiftUI client.
+2. Push changes to GitHub.
+3. GitHub Actions builds the unsigned iOS/iPadOS application on macOS.
+4. CI validates and packages `Fallout London Companion.ipa`.
+5. Install the IPA through SideStore.
+6. Test on a physical iPhone or iPad.
+7. Fix, refine, commit, push, and repeat.
 
-The Android workspace is reserved now so platform-specific code can be added without restructuring the project later. Android is intentionally a secondary track and does not replace or delay the iOS/iPadOS implementation.
+**Android phone / Android tablet**
+1. Mirror the same verified protocol, data, and gameplay-facing behavior in the Kotlin/Compose client.
+2. Push changes to GitHub.
+3. GitHub Actions builds the Android APK.
+4. CI validates and uploads the APK artifact.
+5. Install the APK on an Android phone or tablet for device testing.
+6. Test the same game-facing flows against Fallout: London.
+7. Fix, refine, commit, push, and repeat.
 
-See `FalloutLondonCompanion/Documentation/PLATFORM_PLAN.md` for the platform strategy.
+The intended development loop is therefore:
+
+**implement → GitHub → CI build → install on the target device → physical-device test → iterate**
+
+The iOS/iPadOS IPA and Android APK are separate native builds, while the protocol and data contract remain aligned between them.
 
 ## Branches and builds
 
-- main — stable/release branch
-- develop — active development branch
+- **main** — stable/release branch
+- **develop** — active development branch
 
-GitHub Actions builds the unsigned iOS application on macOS and packages:
+### iOS / iPadOS build
 
-Fallout London Companion.ipa
+GitHub Actions builds the unsigned iOS/iPadOS application on macOS and packages:
+
+`Fallout London Companion.ipa`
 
 The IPA is intended for SideStore/device testing.
 
+### Android build
+
+GitHub Actions builds the Android application and uploads:
+
+`app-debug.apk`
+
+The APK is intended for Android phone/tablet device testing.
+
 ## Development status
 
-### Implemented / verified foundation
-
+### iOS / iPadOS foundation
 - [x] SwiftUI iPhone/iPad project
 - [x] iOS/iPadOS 18 deployment target
 - [x] Responsive orientation support
@@ -149,8 +196,23 @@ The IPA is intended for SideStore/device testing.
 - [x] SideStore-compatible unsigned IPA packaging
 - [x] App icon PNG wired into the asset catalog
 
-### In progress
+### Android foundation
+- [x] Android phone/tablet project
+- [x] Kotlin + Jetpack Compose foundation
+- [x] Responsive orientation support
+- [x] ATTA-Boy boot presentation foundation
+- [x] CRT/scanline presentation
+- [x] Protocol framing and binary decoder
+- [x] UDP/TCP connection foundation
+- [x] Database object graph
+- [x] STAT foundation
+- [x] Inventory parsing foundation
+- [x] Medical RPC foundation
+- [x] Auto-Stimpak controller foundation
+- [x] Local-map packet decoding
+- [x] Android APK CI build
 
+### Cross-platform work still being built out
 - [ ] Full ATTA-Boy physical shell fidelity
 - [ ] Physical controls, LEDs, gauge and haptics
 - [ ] Detailed CRT/phosphor effects
@@ -164,12 +226,11 @@ The IPA is intended for SideStore/device testing.
 - [ ] Persistent cache / Demo Mode
 - [ ] Settings
 - [ ] Device testing and polish
-- [x] Android project foundation and parallel CI APK build
-- [x] Android protocol/database/player/inventory/medical foundation
-- [x] Android STAT/INV/DATA/MAP/RADIO UI foundation
+
+The checklists describe the current implementation boundary; they are not a promise that an item has been fully production-tested.
 
 ## Development workflow
 
-implement → CI build → IPA artifact → SideStore install → physical-device test → iterate
+**implement → GitHub → CI build → device install → physical-device test → iterate**
 
 The app icon and project SVG remain fixed unless explicitly requested to change. Android additions must not modify those locked assets.
