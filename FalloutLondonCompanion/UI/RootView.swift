@@ -13,7 +13,8 @@ struct RootView: View {
 struct MainInterface: View {
     @EnvironmentObject private var app: AppState
     var body: some View {
-        VStack(spacing: 0) {
+        NavigationStack {
+            VStack(spacing: 0) {
             CRTFrame {
                 switch app.selectedTab {
                 case .stat: StatusView()
@@ -31,6 +32,7 @@ struct MainInterface: View {
                         .frame(maxWidth: .infinity)
                 }
             }.padding(.vertical, 10)
+            }
         }
     }
 }
@@ -79,9 +81,14 @@ struct DataView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("DATA")
                     .font(.system(size: 22, design: .monospaced))
-                Text("LIVE DATABASE")
-                    .font(.system(size: 9, design: .monospaced))
-                    .opacity(0.7)
+                HStack {
+                    Text("LIVE DATABASE")
+                        .font(.system(size: 9, design: .monospaced))
+                        .opacity(0.7)
+                    Spacer()
+                    NavigationLink("BROWSE ALL") { DataBrowserView() }
+                        .font(.system(size: 9, design: .monospaced))
+                }
 
                 DataSection(title: "QUESTS", path: "quests")
                 DataSection(title: "LOG", path: "log")
