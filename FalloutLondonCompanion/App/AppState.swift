@@ -7,7 +7,7 @@ final class AppState: ObservableObject {
     @Published var player = PlayerState.demo
     @Published var bootPhase: BootPhase = .off
     @Published var selectedTab: MainTab = .stat
-    @Published var demoMode = true
+    @Published var demoMode = false
 
     let connectionService = ConnectionService()
     let database = PipboyDatabase()
@@ -37,6 +37,7 @@ final class AppState: ObservableObject {
         bootPhase = .credit
         try? await Task.sleep(for: .milliseconds(1400))
         bootPhase = .ready
+        connectionService.discoverAndConnect()
     }
 
     private func apply(_ update: PipboyUpdate) {
