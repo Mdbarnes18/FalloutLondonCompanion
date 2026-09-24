@@ -36,6 +36,7 @@ private val ScreenBlack = Color(0xFF020A04)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appContext = applicationContext
         setContent { FalloutLondonApp() }
     }
 }
@@ -53,12 +54,19 @@ fun FalloutLondonApp() {
     var selectedCategory by remember { mutableStateOf(InventoryCategory.WEAPONS) }
     var boot by remember { mutableStateOf("OFF") }
     var connectionState by remember { mutableStateOf("DISCONNECTED") }
+    var demoMode by remember { mutableStateOf(contextDemoMode()) }
 
     LaunchedEffect(Unit) {
+        if (demoMode) {
+            loadCachedDatabase(db)
+            player = PlayerState.from(db, player)
+            inventory.refresh(db)
+        }
         connection.onState = { state -> scope.launch { connectionState = state } }
         connection.onUpdate = { update ->
             scope.launch {
                 db.apply(update)
+                saveCachedDatabase(db)
                 player = PlayerState.from(db, player)
                 inventory.category = selectedCategory
                 inventory.refresh(db)
@@ -80,7 +88,7 @@ fun FalloutLondonApp() {
         boot = "READY"
 
         scope.launch {
-            runCatching { connection.discoverAndConnect() }
+            runCatching { if (!demoMode) connection.discoverAndConnect() }
                 .onFailure { connectionState = "FAILED: " + (it.message ?: "DISCOVERY ERROR") }
         }
     }
@@ -109,7 +117,7 @@ fun FalloutLondonApp() {
                                 inventory.refresh(db)
                             }
                         )
-                        MainTab.DATA -> DataScreen(db, connection, scope)
+                        MainTab.DATA -> DataScreen(db, connection, scope, demoMode)
                         MainTab.MAP -> MapScreen(db)
                         MainTab.RADIO -> RadioScreen(db, connection, scope)
                     }
@@ -131,7 +139,7 @@ fun FalloutLondonApp() {
                 }
 
                 Text(
-                    text = connectionState,
+                    text = if (demoMode) "DEMO CACHE" else connectionState,
                     color = Phosphor.copy(alpha = .5f),
                     fontFamily = FontFamily.Monospace,
                     fontSize = 8.sp,
@@ -319,7 +327,7 @@ fun InventoryScreen(
 }
 
 @Composable
-fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
+fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope, demoMode: Boolean) {
     val context = LocalContext.current
     var path by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
@@ -339,8 +347,9 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
     Column(Modifier.fillMaxSize().padding(2.dp)) {
         QuestPanel(db, connection, scope)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
+            Text(if (demoMode) "DATA BROWSER / DEMO" else "DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
             Spacer(Modifier.weight(1f))
+            Text(if (demoMode) "DEMO CACHE" else "LIVE", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
             Text(
                 if (copied) "COPIED" else "COPY ALL",
                 color = Phosphor,
@@ -547,3 +556,14 @@ private fun PipboyValue?.asNumberText(): String = when (this) {
 private fun format0(value: Double) = String.format("%.0f", value)
 private fun format1(value: Double) = String.format("%.1f", value)
 private fun format2(value: Float) = String.format("%.2f", value)
+
+private lateinit var appContext: android.content.Context
+private fun contextDemoMode(): Boolean = false
+private fun loadCachedDatabase(db: PipboyDatabase) {
+    if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)
+        .getString("cache", null)?.let { db.restoreSnapshot(it) }
+}
+private fun saveCachedDatabase(db: PipboyDatabase) {
+    if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)
+        .edit().putString("cache", db.snapshotJson()).apply()
+}

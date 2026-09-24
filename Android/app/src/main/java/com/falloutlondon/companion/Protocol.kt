@@ -156,6 +156,76 @@ class PipboyDatabase {
         }
     }
 
+    fun snapshotJson(): String {
+        val root = JSONObject()
+        val nodeArray = JSONArray()
+        nodes.values.forEach { n ->
+            val o = JSONObject().put("id", n.id)
+            when (val v = n.value) {
+                null -> Unit
+                is PipboyValue.Null -> o.put("kind", "null")
+                is PipboyValue.Bool -> o.put("kind", "bool").put("value", v.value)
+                is PipboyValue.Int8 -> o.put("kind", "int8").put("value", v.value.toInt())
+                is PipboyValue.UInt8 -> o.put("kind", "uint8").put("value", v.value)
+                is PipboyValue.Int32 -> o.put("kind", "int32").put("value", v.value)
+                is PipboyValue.UInt32 -> o.put("kind", "uint32").put("value", v.value)
+                is PipboyValue.Float32 -> o.put("kind", "float32").put("value", v.value.toDouble())
+                is PipboyValue.StringValue -> o.put("kind", "string").put("value", v.value)
+            }
+            val children = JSONObject()
+            n.objectChildren.forEach { (k,id) -> children.put(k,id) }
+            o.put("objectChildren", children)
+            o.put("arrayChildren", JSONArray(n.arrayChildren))
+            nodeArray.put(o)
+        }
+        root.put("nodes", nodeArray)
+        localMap?.let { m ->
+            root.put("localMap", JSONObject()
+                .put("width", m.width).put("height", m.height)
+                .put("nwX", m.northWest.first).put("nwY", m.northWest.second)
+                .put("neX", m.northEast.first).put("neY", m.northEast.second)
+                .put("swX", m.southWest.first).put("swY", m.southWest.second)
+                .put("pixels", android.util.Base64.encodeToString(m.pixels, android.util.Base64.NO_WRAP)))
+        }
+        return root.toString()
+    }
+
+    fun restoreSnapshot(json: String): Boolean = runCatching {
+        val root = JSONObject(json)
+        reset()
+        val array = root.getJSONArray("nodes")
+        for (i in 0 until array.length()) {
+            val o = array.getJSONObject(i)
+            val n = node(o.getLong("id"))
+            if (o.has("kind")) {
+                n.value = when (o.getString("kind")) {
+                    "bool" -> PipboyValue.Bool(o.optBoolean("value"))
+                    "int8" -> PipboyValue.Int8(o.optInt("value").toByte())
+                    "uint8" -> PipboyValue.UInt8(o.optInt("value"))
+                    "int32" -> PipboyValue.Int32(o.optInt("value"))
+                    "uint32" -> PipboyValue.UInt32(o.optLong("value"))
+                    "float32" -> PipboyValue.Float32(o.optDouble("value").toFloat())
+                    "string" -> PipboyValue.StringValue(o.optString("value"))
+                    else -> PipboyValue.Null
+                }
+            }
+            val children = o.optJSONObject("objectChildren")
+            if (children != null) children.keys().forEach { k -> n.objectChildren[k] = children.getLong(k) }
+            val ids = o.optJSONArray("arrayChildren")
+            if (ids != null) n.arrayChildren = List(ids.length()) { ids.getLong(it) }
+        }
+        root.optJSONObject("localMap")?.let { m ->
+            localMap = PipboyLocalMapUpdate(
+                m.getInt("width"), m.getInt("height"),
+                m.getDouble("nwX").toFloat() to m.getDouble("nwY").toFloat(),
+                m.getDouble("neX").toFloat() to m.getDouble("neY").toFloat(),
+                m.getDouble("swX").toFloat() to m.getDouble("swY").toFloat(),
+                android.util.Base64.decode(m.optString("pixels"), android.util.Base64.NO_WRAP)
+            )
+        }
+        true
+    }.getOrDefault(false)
+
     fun value(path: String): PipboyValue? = nodeId(path)?.let { nodes[it]?.value }
 
     fun objectChildren(path: String = ""): Map<String, Long> {
