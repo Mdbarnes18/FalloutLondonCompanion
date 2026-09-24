@@ -15,11 +15,32 @@ final class AppState: ObservableObject {
     let inventory = InventoryStore()
 
     init() {
+        demoMode = UserDefaults.standard.bool(forKey: "demoMode")
+        if let cached = UserDefaults.standard.data(forKey: "pipboyCache") {
+            _ = database.restoreSnapshot(cached)
+            player = PlayerState.from(database: database, fallback: .demo)
+            inventory.refresh(from: database)
+        }
         connectionService.onStateChange = { [weak self] state in
             Task { @MainActor in self?.connection = state }
         }
         connectionService.onUpdate = { [weak self] update in
             Task { @MainActor in self?.apply(update) }
+        }
+    }
+
+    func setDemoMode(_ enabled: Bool) {
+        demoMode = enabled
+        UserDefaults.standard.set(enabled, forKey: "demoMode")
+        if enabled {
+            connectionService.disconnect()
+            if let cached = UserDefaults.standard.data(forKey: "pipboyCache") {
+                _ = database.restoreSnapshot(cached)
+                player = PlayerState.from(database: database, fallback: .demo)
+                inventory.refresh(from: database)
+            }
+        } else {
+            connectionService.discoverAndConnect()
         }
     }
 
@@ -37,11 +58,14 @@ final class AppState: ObservableObject {
         bootPhase = .credit
         try? await Task.sleep(for: .milliseconds(1400))
         bootPhase = .ready
-        connectionService.discoverAndConnect()
+        if !demoMode { connectionService.discoverAndConnect() }
     }
 
     private func apply(_ update: PipboyUpdate) {
         database.apply(update)
+        if let snapshot = database.snapshotData() {
+            UserDefaults.standard.set(snapshot, forKey: "pipboyCache")
+        }
         player = PlayerState.from(database: database, fallback: player)
         inventory.refresh(from: database)
         medical.consume(player: player, database: database, connection: connectionService)

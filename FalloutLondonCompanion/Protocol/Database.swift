@@ -20,6 +20,89 @@ final class PipboyDatabase {
         localMap = nil
     }
 
+    func snapshotData() -> Data? {
+        let snapshot = Snapshot(
+            nodes: nodes.values.map { SnapshotNode(id: $0.id, value: $0.value.map(SnapshotValue.init), objectChildren: $0.objectChildren, arrayChildren: $0.arrayChildren) },
+            localMap: localMap.map { SnapshotMap($0) }
+        )
+        return try? JSONEncoder().encode(snapshot)
+    }
+
+    func restoreSnapshot(_ data: Data) -> Bool {
+        guard let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return false }
+        reset()
+        for saved in snapshot.nodes {
+            let n = node(saved.id)
+            n.value = saved.value?.value
+            n.objectChildren = saved.objectChildren
+            n.arrayChildren = saved.arrayChildren
+        }
+        localMap = snapshot.localMap?.value
+        return nodes[0] != nil
+    }
+
+    private struct Snapshot: Codable {
+        let nodes: [SnapshotNode]
+        let localMap: SnapshotMap?
+    }
+    private struct SnapshotNode: Codable {
+        let id: UInt32
+        let value: SnapshotValue?
+        let objectChildren: [String: UInt32]
+        let arrayChildren: [UInt32]
+    }
+    private struct SnapshotMap: Codable {
+        let width: Int
+        let height: Int
+        let nw: [Float]
+        let ne: [Float]
+        let sw: [Float]
+        let pixels: Data
+        init(_ map: PipboyLocalMapUpdate) {
+            width = map.width; height = map.height
+            nw = [map.northWest.x, map.northWest.y]
+            ne = [map.northEast.x, map.northEast.y]
+            sw = [map.southWest.x, map.southWest.y]
+            pixels = map.pixels
+        }
+        var value: PipboyLocalMapUpdate {
+            PipboyLocalMapUpdate(width: width, height: height,
+                northWest: SIMD2(nw.first ?? 0, nw.dropFirst().first ?? 0),
+                northEast: SIMD2(ne.first ?? 0, ne.dropFirst().first ?? 0),
+                southWest: SIMD2(sw.first ?? 0, sw.dropFirst().first ?? 0),
+                pixels: pixels)
+        }
+    }
+    private struct SnapshotValue: Codable {
+        let kind: String
+        let text: String?
+        let number: Double?
+        init(_ value: PipboyValue) {
+            switch value {
+            case .null: kind = "null"; text = nil; number = nil
+            case .bool(let v): kind = "bool"; text = v ? "1" : "0"; number = nil
+            case .int8(let v): kind = "int8"; text = nil; number = Double(v)
+            case .uint8(let v): kind = "uint8"; text = nil; number = Double(v)
+            case .int32(let v): kind = "int32"; text = nil; number = Double(v)
+            case .uint32(let v): kind = "uint32"; text = nil; number = Double(v)
+            case .float32(let v): kind = "float32"; text = nil; number = Double(v)
+            case .string(let v): kind = "string"; text = v; number = nil
+            }
+        }
+        var value: PipboyValue {
+            switch kind {
+            case "bool": return .bool(text == "1")
+            case "int8": return .int8(Int8(number ?? 0))
+            case "uint8": return .uint8(UInt8(number ?? 0))
+            case "int32": return .int32(Int32(number ?? 0))
+            case "uint32": return .uint32(UInt32(number ?? 0))
+            case "float32": return .float32(Float(number ?? 0))
+            case "string": return .string(text ?? "")
+            default: return .null
+            }
+        }
+    }
+
     func apply(_ update: PipboyUpdate) {
         switch update {
         case .data(let data):
