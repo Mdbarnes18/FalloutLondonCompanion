@@ -16,6 +16,8 @@ final class AppState: ObservableObject {
 
     init() {
         demoMode = UserDefaults.standard.bool(forKey: "demoMode")
+        medical.autoStimpakEnabled = UserDefaults.standard.object(forKey: "autoStimpakEnabled") as? Bool ?? true
+        medical.threshold = UserDefaults.standard.object(forKey: "autoStimpakThreshold") as? Double ?? 0.35
         if let cached = UserDefaults.standard.data(forKey: "pipboyCache") {
             _ = database.restoreSnapshot(cached)
             player = PlayerState.from(database: database, fallback: .demo)
@@ -37,6 +39,24 @@ final class AppState: ObservableObject {
         connectionService.onUpdate = { [weak self] update in
             Task { @MainActor in self?.apply(update) }
         }
+    }
+
+    func setAutoStimpakEnabled(_ enabled: Bool) {
+        medical.autoStimpakEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: "autoStimpakEnabled")
+    }
+
+    func setAutoStimpakThreshold(_ value: Double) {
+        medical.threshold = min(max(value, 0.10), 0.90)
+        UserDefaults.standard.set(medical.threshold, forKey: "autoStimpakThreshold")
+    }
+
+    func useStimpak() {
+        medical.useStimpak(database: database, connection: connectionService)
+    }
+
+    func useRadAway() {
+        medical.useRadAway(database: database, connection: connectionService)
     }
 
     func setDemoMode(_ enabled: Bool) {
