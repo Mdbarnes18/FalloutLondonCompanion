@@ -123,7 +123,10 @@ fun FalloutLondonApp() {
             Column(Modifier.fillMaxSize()) {
                 CrtFrame {
                     when (selectedTab) {
-                        MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold)
+                        MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold) { value ->
+                            stimpakThreshold = value
+                            saveAutoStimpakThreshold(value)
+                        }
                         MainTab.INV -> InventoryScreen(
                             store = inventory,
                             category = selectedCategory,
@@ -236,7 +239,8 @@ fun StatusScreen(
     connection: PipboyConnection,
     scope: kotlinx.coroutines.CoroutineScope,
     autoStimpak: Boolean,
-    threshold: Double
+    threshold: Double,
+    onThresholdChanged: (Double) -> Unit
 ) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("STAT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
@@ -266,9 +270,8 @@ fun StatusScreen(
         Text("THRESHOLD " + (threshold * 100).toInt() + "%", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Slider(value = threshold.toFloat(), onValueChange = {
             val value = it.toDouble()
-            stimpakThreshold = value
             medical.threshold = value
-            saveAutoStimpakThreshold(value)
+            onThresholdChanged(value)
         }, valueRange = 0.10f..0.90f, steps = 15)
         player.limbConditions.forEach { entry ->
             Text(entry.key + "  " + (entry.value * 100.0).toInt() + "%", color = Phosphor.copy(alpha=.75f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
