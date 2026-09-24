@@ -232,3 +232,10 @@ The checklists describe the current implementation boundary; they are not a prom
 **implement → GitHub → CI build → device install → physical-device test → iterate**
 
 The app icon and project SVG remain fixed unless explicitly requested to change. Android additions must not modify those locked assets.
+
+
+## Open source
+
+Fallout London Companion is an open-source project. The source code, protocol research, documentation, and platform implementations are available in this repository so the project can be inspected, learned from, tested, and improved by the community.
+
+Contributions, bug reports, improvements, and platform-specific work are welcome. Please keep Fallout: London/Team FOLON assets, third-party assets, and any separately licensed material subject to their respective permissions and licenses.
