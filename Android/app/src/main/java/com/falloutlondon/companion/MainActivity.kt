@@ -58,7 +58,8 @@ fun FalloutLondonApp() {
             }
         }
 
-        boot = "POSITIONING..."
+        delay(450)
+        boot = "ATTA-BOY\nPOSITIONING..."
         delay(700)
         boot = "DISPLAY INITIALIZING..."
         delay(650)
@@ -196,6 +197,7 @@ fun StatusScreen(player: PlayerState) {
         Text("RAD  " + format1(player.radiation), color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("WT   " + format1(player.carryWeight) + " / " + format1(player.maxWeight), color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("XP   " + format1(player.xpProgress * 100.0) + "%", color = Phosphor, fontFamily = FontFamily.Monospace)
+        Text("LEVEL " + player.level + "   PERKS " + player.perkPoints, color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         player.limbConditions.forEach { entry ->
             Text(
@@ -204,6 +206,12 @@ fun StatusScreen(player: PlayerState) {
                 fontFamily = FontFamily.Monospace,
                 fontSize = 10.sp
             )
+        }
+        if (player.activeEffects.isNotEmpty()) {
+            Text("EFFECTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+            player.activeEffects.forEach { effect ->
+                Text("• " + effect, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            }
         }
     }
 }
@@ -284,6 +292,8 @@ fun InventoryScreen(
                     Text("SELECT ITEM", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                 } else {
                     Text(item.name, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 15.sp)
+                    if (item.legendary) Text("★ LEGENDARY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+                    if (item.equipped) Text("EQUIPPED", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     Text("COUNT  " + item.count, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     Text("WEIGHT " + format1(item.weight), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     Text("VALUE  " + item.value, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
@@ -291,6 +301,9 @@ fun InventoryScreen(
                     item.armor?.let { Text("ARMOR  " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
                     item.radiationResistance?.let { Text("RAD RES " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
                     item.energyResistance?.let { Text("ENG RES " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
+                    item.description?.takeIf { it.isNotBlank() }?.let {
+                        Text(it, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp, maxLines = 5)
+                    }
                 }
             }
         }
