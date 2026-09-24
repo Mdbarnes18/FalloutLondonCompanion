@@ -1,6 +1,6 @@
 # Fallout London Companion
 
-Native SwiftUI iPhone/iPad companion for Fallout: London, built around the game's ATTA-Boy/Pip-Boy companion protocol.
+Native SwiftUI iPhone/iPad companion for Fallout: London, built around the game's ATTA-Boy/Pip-Boy companion protocol, with a planned parallel Android implementation.
 
 <p align="center">
   <img src="docs/FalloutLondonCompanion.svg" alt="Fallout London Companion artwork" width="256">
@@ -105,6 +105,18 @@ Fallout: London is a Team FOLON project. This companion is a separate applicatio
 
 Private correspondence or private Discord screenshots are not included in the repository.
 
+## Platform structure
+
+The repository is structured for two native clients sharing one verified behavioral contract:
+
+- **iOS/iPadOS** — primary implementation, SwiftUI, Xcode, IPA/SideStore workflow.
+- **Android** — secondary implementation track, Kotlin and Jetpack Compose.
+- **Shared contract** — protocol framing, data-model behavior, RPC definitions, captures, test data and verification requirements.
+
+The Android workspace is reserved now so platform-specific code can be added without restructuring the project later. Android is intentionally a secondary track and does not replace or delay the iOS/iPadOS implementation.
+
+See `FalloutLondonCompanion/Documentation/PLATFORM_PLAN.md` for the platform strategy.
+
 ## Branches and builds
 
 - main — stable/release branch
@@ -157,4 +169,4 @@ The IPA is intended for SideStore/device testing.
 
 implement → CI build → IPA artifact → SideStore install → physical-device test → iterate
 
-The app icon and project SVG remain fixed unless explicitly requested to change.
+The app icon and project SVG remain fixed unless explicitly requested to change. Android additions must not modify those locked assets.
