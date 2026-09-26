@@ -83,28 +83,38 @@ struct SettingsScaffoldView: View {
 }
 
 
+struct MainInterface: View {
     @EnvironmentObject private var app: AppState
+    @State private var showingSettings = false
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-            CRTFrame {
-                switch app.selectedTab {
-                case .stat: StatusView()
-                case .inv: InventoryView()
-                case .data: DataView()
-                case .map: MapStatusView()
-                case .radio: RadioView()
+                HStack {
+                    Text("FOLON // ATTA-BOY").font(.system(size: 11, design: .monospaced)).foregroundStyle(.green)
+                    Spacer()
+                    Button { showingSettings = true } label: { Image(systemName: "gearshape").foregroundStyle(.green) }
+                }.padding(.horizontal, 8).padding(.vertical, 6)
+                CRTFrame {
+                    if showingSettings { SettingsScaffoldView() }
+                    else {
+                        switch app.selectedTab {
+                        case .stat: StatusView()
+                        case .inv: InventoryView()
+                        case .data: DataView()
+                        case .map: MapStatusView()
+                        case .radio: RadioView()
+                        }
+                    }
                 }
-            }
-            HStack {
-                ForEach(MainTab.allCases, id: \.self) { tab in
-                    Button(tab.rawValue) { app.selectedTab = tab }
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(app.selectedTab == tab ? .green : .gray)
-                        .frame(maxWidth: .infinity)
-                }
-            }.padding(.vertical, 10)
-            }
+                HStack {
+                    ForEach(MainTab.allCases, id: \.self) { tab in
+                        Button(tab.rawValue) { showingSettings = false; app.selectedTab = tab }
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(!showingSettings && app.selectedTab == tab ? .green : .gray)
+                            .frame(maxWidth: .infinity)
+                    }
+                }.padding(.vertical, 10)
+            }.toolbar(.hidden, for: .navigationBar)
         }
     }
 }
