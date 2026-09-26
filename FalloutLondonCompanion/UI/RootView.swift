@@ -12,6 +12,78 @@ struct RootView: View {
 
 struct MainInterface: View {
     @EnvironmentObject private var app: AppState
+    @State private var showingSettings = false
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("FOLON // ATTA-BOY").font(.system(size: 11, design: .monospaced)).foregroundStyle(.green)
+                    Spacer()
+                    Button { showingSettings = true } label: { Image(systemName: "gearshape").foregroundStyle(.green) }
+                }.padding(.horizontal, 8).padding(.vertical, 6)
+                CRTFrame {
+                    if showingSettings { SettingsScaffoldView() }
+                    else {
+                        switch app.selectedTab {
+                        case .stat: StatusView()
+                        case .inv: InventoryView()
+                        case .data: DataView()
+                        case .map: MapStatusView()
+                        case .radio: RadioView()
+                        }
+                    }
+                }
+                HStack {
+                    ForEach(MainTab.allCases, id: \.self) { tab in
+                        Button(tab.rawValue) { showingSettings = false; app.selectedTab = tab }
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(!showingSettings && app.selectedTab == tab ? .green : .gray)
+                            .frame(maxWidth: .infinity)
+                    }
+                }.padding(.vertical, 10)
+            }.toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+struct SettingsScaffoldView: View {
+    @EnvironmentObject private var app: AppState
+    @AppStorage("folon.scanlines.enabled") private var scanlinesEnabled = true
+    @AppStorage("folon.audio.enabled") private var audioEnabled = false
+    @AppStorage("folon.haptics.enabled") private var hapticsEnabled = true
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SETTINGS").font(.system(size: 20, design: .monospaced))
+                Text("CONNECTION").font(.system(size: 11, design: .monospaced))
+                Text(String(describing: app.connection)).font(.system(size: 9, design: .monospaced)).opacity(0.75)
+                Toggle("DEMO / CACHED DATA", isOn: Binding(get: { app.demoMode }, set: { app.setDemoMode($0) })).font(.system(size: 10, design: .monospaced))
+                Divider().overlay(.green.opacity(0.3))
+                Text("DISPLAY & FEEDBACK").font(.system(size: 11, design: .monospaced))
+                Toggle("CRT SCANLINES", isOn: $scanlinesEnabled).font(.system(size: 10, design: .monospaced))
+                Toggle("AUDIO PREFERENCE", isOn: $audioEnabled).font(.system(size: 10, design: .monospaced))
+                Toggle("HAPTICS PREFERENCE", isOn: $hapticsEnabled).font(.system(size: 10, design: .monospaced))
+                Text("Audio and haptics preferences are stored; hardware feedback integration remains pending.").font(.system(size: 8, design: .monospaced)).opacity(0.65)
+                Divider().overlay(.green.opacity(0.3))
+                Text("MEDICAL").font(.system(size: 11, design: .monospaced))
+                Toggle("AUTO-STIMPAK", isOn: Binding(get: { app.autoStimpakEnabled }, set: { app.setAutoStimpakEnabled($0) })).font(.system(size: 10, design: .monospaced))
+                Text("AUTO-STIMPAK THRESHOLD  \(Int(app.autoStimpakThreshold * 100))%").font(.system(size: 9, design: .monospaced))
+                Slider(value: Binding(get: { app.autoStimpakThreshold }, set: { app.setAutoStimpakThreshold($0) }), in: 0.1...0.9, step: 0.05).tint(.green)
+                HStack {
+                    Button("USE STIMPAK") { app.useStimpak() }.font(.system(size: 9, design: .monospaced))
+                    Spacer()
+                    Button("USE RADAWAY") { app.useRadAway() }.font(.system(size: 9, design: .monospaced))
+                }
+                Divider().overlay(.green.opacity(0.3))
+                NavigationLink("OPEN DATABASE BROWSER") { DataBrowserView() }.font(.system(size: 10, design: .monospaced))
+                Text("Unofficial companion interface. Game actions depend on verified protocol support.").font(.system(size: 8, design: .monospaced)).opacity(0.6)
+            }.foregroundStyle(.green).padding(14)
+        }
+    }
+}
+
+
+    @EnvironmentObject private var app: AppState
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
