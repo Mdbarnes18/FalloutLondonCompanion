@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: windows-build-${{ github.ref }}
+  group: windows-build-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -51,8 +51,20 @@ jobs:
           '@ | Set-Content -Encoding UTF8 $config
           & 7z a -mx=9 $archive $app
           if ($LASTEXITCODE -ne 0) { throw "7-Zip failed with exit code $LASTEXITCODE" }
-          cmd /c copy /b "$sfx" + "$config" + "$archive" "$output"
-          if ($LASTEXITCODE -ne 0) { throw "Failed to assemble portable EXE with copy /b (exit code $LASTEXITCODE)" }
+          $outputStream = [System.IO.File]::Create($output)
+          try {
+            foreach ($source in @($sfx, $config, $archive)) {
+              $inputStream = [System.IO.File]::OpenRead($source)
+              try {
+                $inputStream.CopyTo($outputStream)
+              } finally {
+                $inputStream.Dispose()
+              }
+            }
+          } finally {
+            $outputStream.Dispose()
+          }
+          if (-not (Test-Path $output)) { throw "Portable EXE was not created" }
       - name: Collect Windows artifacts
         shell: pwsh
         run: |
