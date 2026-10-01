@@ -641,7 +641,8 @@ fun MapScreen(db: PipboyDatabase) {
             Text("X " + db.value("map.world.player.x").asNumberText() + "  Y " + db.value("map.world.player.y").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
             Spacer(Modifier.weight(1f))
             Text("ZOOM -", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom - .25f).coerceAtLeast(.75f) }.padding(5.dp))
-            Text("ZOOM +", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom + .25f).coerceAtMost(4f) }.padding(5.dp))\n            Text("REQUEST MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { scope.launch { connection.sendRPC(13, emptyList()) } }.padding(5.dp))
+            Text("ZOOM +", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom + .25f).coerceAtMost(4f) }.padding(5.dp))
+            Text("REQUEST MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { scope.launch { connection.sendRPC(13, emptyList()) } }.padding(5.dp))
         }
     }
 }
