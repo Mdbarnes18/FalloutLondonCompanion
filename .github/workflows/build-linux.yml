@@ -50,7 +50,7 @@ jobs:
           VERSION="$(cat ../VERSION)"
           ARCH=x86_64 APPIMAGETOOL_APP_NAME="Fallout London Companion" VERSION="$VERSION" ./appimagetool.AppImage --no-appstream "$GITHUB_WORKSPACE/AppDir" "$GITHUB_WORKSPACE/Fallout London Companion-$VERSION-x86_64.AppImage"
       - name: Prepare Flatpak icon
-        run: magick src/main/resources/app.png -resize '512x512>' src/main/resources/app-flatpak.png
+        run: convert src/main/resources/app.png -resize '512x512>' src/main/resources/app-flatpak.png
       - name: Build Flatpak
         run: |
           flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
