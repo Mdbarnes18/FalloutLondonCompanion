@@ -212,7 +212,7 @@ struct QuestDataSection: View {
     private func questRow(key: String, node: UInt32) -> some View {
         let name = app.database.objectValue(atNode: node, key: "text")
         let active = app.database.objectValue(atNode: node, key: "active")
-        let objectives = app.database.objectChildren(atNode: node, key: "objectives")
+        let objectives = app.database.objectNodeID(atNode: node, key: "objectives").map { app.database.objectChildren(atNode: $0) } ?? [:]
         let title: String = {
             if case .string(let value) = name, !value.isEmpty { return value }
             return key
