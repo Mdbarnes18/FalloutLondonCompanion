@@ -66,7 +66,7 @@ private struct EffectsPanel: View {
             if effects.isEmpty {
                 Text("NO ACTIVE EFFECTS RECEIVED").font(.system(size: 8, design: .monospaced)).opacity(0.55)
             } else {
-                ForEach(effects, id: .self) { Text("• ($0)").font(.system(size: 9, design: .monospaced)) }
+                ForEach(effects, id: \.self) { effect in Text("• \(effect)").font(.system(size: 9, design: .monospaced)) }
             }
         }.padding(8).overlay(Rectangle().stroke(.green.opacity(0.25)))
     }
