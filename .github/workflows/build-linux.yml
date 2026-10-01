@@ -1,0 +1,74 @@
+name: Build Fallout London Companion Linux
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: Desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: "9.6.0"
+      - name: Install Linux packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder desktop-file-utils
+      - name: Build DEB, RPM and desktop app image
+        run: gradle packageReleaseDeb packageReleaseRpm createReleaseDistributable --no-daemon
+      - name: Create AppImage AppDir
+        run: |
+          APP="build/compose/binaries/main-release/app/Fallout London Companion"
+          mkdir -p "$GITHUB_WORKSPACE/AppDir"
+          cp -a "$APP"/. "$GITHUB_WORKSPACE/AppDir/"
+          printf '%s\n' '#!/bin/sh' 'exec "$(dirname "$0")/bin/Fallout London Companion" "$@"' > "$GITHUB_WORKSPACE/AppDir/AppRun"
+          chmod +x "$GITHUB_WORKSPACE/AppDir/AppRun"
+          cp src/main/resources/app.png "$GITHUB_WORKSPACE/AppDir/org.falloutlondon.Companion.png"
+          cp src/main/resources/org.falloutlondon.Companion.desktop "$GITHUB_WORKSPACE/AppDir/org.falloutlondon.Companion.desktop"
+          sed -i 's#Exec=.*#Exec=AppRun#; s#Icon=.*#Icon=org.falloutlondon.Companion#' "$GITHUB_WORKSPACE/AppDir/org.falloutlondon.Companion.desktop"
+          cp src/main/resources/app.png "$GITHUB_WORKSPACE/AppDir/.DirIcon"
+      - name: Build AppImage
+        run: |
+          curl -L --fail --retry 3 -o appimagetool.AppImage https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          chmod +x appimagetool.AppImage
+          VERSION="$(cat ../VERSION)"
+          ARCH=x86_64 APPIMAGETOOL_APP_NAME="Fallout London Companion" VERSION="$VERSION" ./appimagetool.AppImage --no-appstream "$GITHUB_WORKSPACE/AppDir" "$GITHUB_WORKSPACE/Fallout London Companion-$VERSION-x86_64.AppImage"
+      - name: Build Flatpak
+        run: |
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub org.freedesktop.Sdk//25.08 org.freedesktop.Platform//25.08
+          flatpak-builder --user --force-clean --repo "$GITHUB_WORKSPACE/flatpak-repo" "$GITHUB_WORKSPACE/flatpak-build" flatpak/org.falloutlondon.Companion.yml
+          flatpak build-bundle "$GITHUB_WORKSPACE/flatpak-repo" "$GITHUB_WORKSPACE/Fallout London Companion.flatpak" org.falloutlondon.Companion --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+      - name: Collect Linux artifacts
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/release"
+          cp build/compose/binaries/main-release/deb/*.deb "$GITHUB_WORKSPACE/release/Fallout London Companion.deb"
+          cp build/compose/binaries/main-release/rpm/*.rpm "$GITHUB_WORKSPACE/release/Fallout London Companion.rpm"
+          cp "$GITHUB_WORKSPACE/Fallout London Companion-"*.AppImage "$GITHUB_WORKSPACE/release/Fallout London Companion.AppImage"
+          cp "$GITHUB_WORKSPACE/Fallout London Companion.flatpak" "$GITHUB_WORKSPACE/release/"
+          desktop-file-validate "$GITHUB_WORKSPACE/AppDir/org.falloutlondon.Companion.desktop"
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fallout-London-Companion-linux
+          path: release/*
+          if-no-files-found: error

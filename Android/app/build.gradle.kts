@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
-
 android {
     namespace = "com.falloutlondon.companion"
     compileSdk = 37
@@ -10,14 +9,12 @@ android {
         applicationId = "com.falloutlondon.companion"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 145
+        versionName = file("../../VERSION").readText().trim()
     }
     buildFeatures { compose = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-
     sourceSets["main"].res.srcDirs("$buildDir/generated/lockedIcon/res")
-
     tasks.register<Copy>("copyLockedAppIcon") {
         from(project.file("../../FalloutLondonCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png"))
         into(layout.buildDirectory.dir("generated/lockedIcon/res/drawable-nodpi"))
@@ -25,7 +22,6 @@ android {
     }
     tasks.named("preBuild").configure { dependsOn("copyLockedAppIcon") }
 }
-
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)

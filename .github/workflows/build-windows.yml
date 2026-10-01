@@ -1,0 +1,64 @@
+name: Build Fallout London Companion Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: Desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: "9.6.0"
+      - name: Create locked Windows icon
+        shell: pwsh
+        run: |
+          magick ..\FalloutLondonCompanion\Assets.xcassets\AppIcon.appiconset\AppIcon.png -define icon:auto-resize=256,128,64,48,32,16 src\main\resources\app.ico
+      - name: Build installer and distributable
+        run: gradle packageReleaseMsi createReleaseDistributable --no-daemon
+      - name: Build portable self-extracting EXE
+        shell: pwsh
+        run: |
+          $app = "build\compose\binaries\main-release\app\Fallout London Companion"
+          $archive = "$env:RUNNER_TEMP\FalloutLondonCompanion-portable.7z"
+          $config = "$env:RUNNER_TEMP\portable-config.txt"
+          $sfx = "C:\Program Files\7-Zip\7z.sfx"
+          @'
+          ;!@Install@!UTF-8!
+          RunProgram="Fallout London Companion\Fallout London Companion.exe"
+          GUIMode="2"
+          ;!@InstallEnd@!
+          '@ | Set-Content -Encoding UTF8 $config
+          & 7z a -mx=9 $archive $app
+          cmd /c copy /b "$sfx+$config+$archive" "$env:GITHUB_WORKSPACE\Fallout London Companion Windows Portable.exe"
+      - name: Collect Windows artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:GITHUB_WORKSPACE\release" | Out-Null
+          Copy-Item (Get-ChildItem "build\compose\binaries\main-release\msi\*.msi" | Select-Object -First 1).FullName "$env:GITHUB_WORKSPACE\release\Fallout London Companion Windows Installer.msi"
+          Copy-Item "$env:GITHUB_WORKSPACE\Fallout London Companion Windows Portable.exe" "$env:GITHUB_WORKSPACE\release\"
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: Fallout-London-Companion-windows
+          path: release/*
+          if-no-files-found: error

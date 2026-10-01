@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Fallout London Companion
+Comment=Fallout London Companion
+Exec=fallout-london-companion
+Icon=org.falloutlondon.Companion
+Terminal=false
+Type=Application
+Categories=Utility;Game;
