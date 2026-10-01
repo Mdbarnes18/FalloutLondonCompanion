@@ -448,7 +448,7 @@ struct MapStatusView: View {
             HStack {
                 Text("X \(number("map.world.player.x"))  Y \(number("map.world.player.y"))")
                 Spacer()
-                Text("RESET").onTapGesture { zoom = 1; offset = .zero }
+                Button("REQUEST MAP") { app.connectionService.sendRPC(type: 13, args: []) }\n                    .font(.system(size: 8, design: .monospaced))\n                Text("RESET").onTapGesture { zoom = 1; offset = .zero }
             }.font(.system(size: 8, design: .monospaced))
         }.foregroundStyle(.green).padding(12)
     }
