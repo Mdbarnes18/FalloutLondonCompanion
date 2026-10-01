@@ -10,8 +10,8 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 - [x] Persistent database cache / Demo Mode foundation
 - [x] Full database browser, copy-all, and TXT export
 - [x] Medical controls: manual Stimpak/RadAway and configurable Auto-Stimpak
-- [ ] Settings screen with connection, demo, display, audio, haptics, and data-management sections
-- [ ] Shared screen-level loading, empty, disconnected, and error presentation conventions
+- [x] Settings screen with connection, demo, display, audio, haptics, and data-management sections
+- [x] Shared screen-level loading, empty, disconnected, and error presentation conventions
 - [ ] Consistent navigation and physical-control affordances across phone, tablet, portrait, and landscape
 
 ## STAT
@@ -24,8 +24,8 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 - [x] Category tabs, item list, selection/detail panel, favorite/equipped/legendary indicators
 - [ ] Complete item-card scaffold for all observed item-stat groups
 - [ ] Item action sheet scaffold (use, equip/unequip, drop, favorite, sort), gated by verified RPC support
-- [ ] Search, sort, and filter controls with persistent selection
-- [ ] Empty, loading, and action-result states
+- [x] Search, sort, and filter controls with persistent selection
+- [x] Empty, loading, and action-result states
 
 ## DATA
 - [x] Quest/log/workshop/player summaries and full database browser/export
