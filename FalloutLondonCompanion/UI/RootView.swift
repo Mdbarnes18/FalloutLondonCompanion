@@ -399,12 +399,12 @@ struct MapStatusView: View {
                 Rectangle().fill(Color.green.opacity(0.025))
                 VStack(spacing: 6) {
                     Text("MAP CANVAS").font(.system(size: 14, design: .monospaced))
-                    Text("MODE \\(mode)   ZOOM \\(String(format: "%.1fx", zoom))")
+                    Text("MODE \(mode)   ZOOM \(String(format: "%.1fx", zoom))")
                         .font(.system(size: 8, design: .monospaced))
                     if let local = app.database.localMap {
-                        Text("LOCAL SNAPSHOT \\(local.width) × \\(local.height)")
+                        Text("LOCAL SNAPSHOT \(local.width) × \(local.height)")
                             .font(.system(size: 9, design: .monospaced))
-                        Text("PIXEL PAYLOAD \\(local.pixels.count) BYTES")
+                        Text("PIXEL PAYLOAD \(local.pixels.count) BYTES")
                             .font(.system(size: 8, design: .monospaced)).opacity(0.6)
                     } else {
                         Text("NO LOCAL MAP SNAPSHOT").font(.system(size: 9, design: .monospaced)).opacity(0.6)
@@ -421,7 +421,7 @@ struct MapStatusView: View {
             .frame(maxWidth: .infinity, minHeight: 180, maxHeight: 280)
             .clipped().overlay(Rectangle().stroke(.green.opacity(0.3)))
             HStack {
-                Text("X (number("map.world.player.x"))  Y (number("map.world.player.y"))")
+                Text("X \(number("map.world.player.x"))  Y \(number("map.world.player.y"))")
                 Spacer()
                 Text("RESET").onTapGesture { zoom = 1; offset = .zero }
             }.font(.system(size: 8, design: .monospaced))
