@@ -274,10 +274,14 @@ fun StatusScreen(
         Text("STAT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
         Gauge("HP", player.hp, player.maxHp)
         Gauge("AP", player.ap, player.maxAp)
-        Text("RAD  " + format1(player.radiation), color = Phosphor, fontFamily = FontFamily.Monospace)
+        Text("RAD  " + format1(player.radiation) + "   " + if (player.radiation >= 80) "CRITICAL" else if (player.radiation >= 40) "ELEVATED" else "NOMINAL", color = Phosphor, fontFamily = FontFamily.Monospace)
+        Text("ACTIVE EFFECTS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+        if (player.activeEffects.isEmpty()) Text("NO ACTIVE EFFECTS RECEIVED", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("WT   " + format1(player.carryWeight) + " / " + format1(player.maxWeight), color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("XP   " + format1(player.xpProgress * 100.0) + "%", color = Phosphor, fontFamily = FontFamily.Monospace)
         Text("LEVEL " + player.level + "   PERKS " + player.perkPoints, color = Phosphor, fontFamily = FontFamily.Monospace)
+        Text(if (player.perkPoints > 0) "PERK SELECTION AVAILABLE" else "NO LEVEL-UP AVAILABLE", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("CHARACTER REACTION  " + if (player.maxHp > 0 && player.hp / player.maxHp <= .2) "CRITICAL" else if (player.maxHp > 0 && player.hp / player.maxHp <= .5) "WARNING" else "NORMAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Text("SPECIAL   " + player.special.joinToString(" "), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
         Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -398,6 +402,8 @@ fun InventoryScreen(store: InventoryStore, category: InventoryCategory, onCatego
                 if (item == null) Text("SELECT ITEM", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                 else {
                     Text(item.name, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 15.sp)
+                    Text("ACTIONS: USE/EQUIP • DROP • FAVORITE", color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+                    Text("RPC ACTIONS LOCKED UNTIL VERIFIED", color = Phosphor.copy(alpha = .45f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
                     if (item.legendary) Text("★ LEGENDARY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     if (item.equipped) Text("EQUIPPED", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     Text("COUNT  " + item.count, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
@@ -434,6 +440,11 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
 
     Column(Modifier.fillMaxSize().padding(2.dp)) {
         QuestPanel(db, connection, scope)
+        DataSummarySection(db, "NOTES", "notes")
+        DataSummarySection(db, "STATISTICS", "stats")
+        DataSummarySection(db, "WORKSHOP", "workshop")
+        DataSummarySection(db, "MISC", "misc")
+        Text(if (demoMode) "STALE-CACHE / DEMO DATA: LIVE ACTIONS DISABLED" else "LIVE DATA: ACTION FEEDBACK FOLLOWS VERIFIED RESPONSES", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(if (demoMode) "DATA BROWSER / DEMO" else "DATA BROWSER", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 17.sp)
             Spacer(Modifier.weight(1f))
@@ -546,43 +557,51 @@ private fun DataBrowserRow(
 
 @Composable
 fun MapScreen(db: PipboyDatabase) {
+    var mode by rememberSaveable { mutableStateOf("ORIGINAL") }
+    var zoom by rememberSaveable { mutableStateOf(1f) }
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
-        Text("WORLDSPACE: " + (db.value("map.currworldspace").asString() ?: "UNKNOWN"), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("X  " + db.value("map.world.player.x").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("Y  " + db.value("map.world.player.y").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text("ROT " + db.value("map.world.player.rotation").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-        Text(
-            db.localMap?.let { "LOCAL SNAPSHOT  " + it.width + " × " + it.height } ?: "NO LOCAL MAP SNAPSHOT",
-            color = Phosphor,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 9.sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("MAP", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+            Spacer(Modifier.weight(1f))
+            Text(if (db.localMap != null) "SNAPSHOT READY" else "NO SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            listOf("ORIGINAL", "ENHANCED", "TOPOGRAPHICAL").forEach { option ->
+                Text(option, color = if (mode == option) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                    modifier = Modifier.background(if (mode == option) Phosphor else Color.Transparent)
+                        .border(1.dp, Phosphor.copy(alpha = .3f)).clickable { mode = option }.padding(5.dp))
+            }
+        }
+        Box(Modifier.fillMaxWidth().weight(1f).border(1.dp, Phosphor.copy(alpha = .3f)).padding(10.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("MAP CANVAS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                Text("MODE " + mode + "   ZOOM " + String.format("%.1fx", zoom), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                if (db.localMap != null) Text("LOCAL SNAPSHOT PAYLOAD AVAILABLE", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                else Text("NO LOCAL MAP SNAPSHOT", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+                Text("PLAYER / QUEST / DISCOVERED / CUSTOM MARKER LAYERS", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+                Text("ARTWORK + COORDINATE TRANSFORM AWAIT LIVE CAPTURE VERIFICATION", color = Phosphor.copy(alpha = .45f), fontFamily = FontFamily.Monospace, fontSize = 7.sp)
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("X " + db.value("map.world.player.x").asNumberText() + "  Y " + db.value("map.world.player.y").asNumberText(), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            Spacer(Modifier.weight(1f))
+            Text("ZOOM -", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom - .25f).coerceAtLeast(.75f) }.padding(5.dp))
+            Text("ZOOM +", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp, modifier = Modifier.clickable { zoom = (zoom + .25f).coerceAtMost(4f) }.padding(5.dp))
+        }
     }
 }
 
 @Composable
-fun RadioScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Text("RADIO", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
-        val stations = db.objectChildren("radio")
-        if (stations.isEmpty()) {
-            Text("NO RADIO DATA RECEIVED", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+fun DataSummarySection(db: PipboyDatabase, title: String, path: String) {
+    val children = db.objectChildren(path)
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).border(1.dp, Phosphor.copy(alpha = .25f)).padding(7.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+            Spacer(Modifier.weight(1f))
+            Text(children.size.toString() + " NODES", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
         }
-        stations.keys.sorted().forEach { key ->
-            val id = stations[key] ?: return@forEach
-            val active = (db.objectValue(id, "active") as? PipboyValue.Bool)?.value ?: false
-            val inRange = (db.objectValue(id, "inrange") as? PipboyValue.Bool)?.value ?: true
-            if (active || inRange) {
-                Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (active) "■" else "▶", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp,
-                        modifier = Modifier.clickable { scope.launch { connection.sendRPC(12, listOf(id)) } }.padding(end = 7.dp))
-                    Text(key, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
-                    Spacer(Modifier.weight(1f))
-                    if (active) Text("ON AIR", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
-                }
-            }
-        }
+        if (children.isEmpty()) Text("NO DATA RECEIVED", color = Phosphor.copy(alpha = .5f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        else children.keys.sorted().take(6).forEach { Text("• " + it.uppercase(), color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 8.sp) }
     }
 }
 

@@ -19,6 +19,7 @@ struct InventoryView: View {
     @AppStorage("folon.inventory.sort") private var sortRaw = InventorySort.name.rawValue
     @AppStorage("folon.inventory.filter") private var filterRaw = InventoryFilter.all.rawValue
     @State private var search = ""
+    @State private var showingActions = false
 
     private var sort: InventorySort { InventorySort(rawValue: sortRaw) ?? .name }
     private var filter: InventoryFilter { InventoryFilter(rawValue: filterRaw) ?? .all }
@@ -145,6 +146,7 @@ struct InventoryView: View {
                let item = app.inventory.items.first(where: { $0.id == id }) {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(item.name).font(.system(size: 16, weight: .bold, design: .monospaced))
+                    Button("ACTIONS") { showingActions = true }.font(.system(size: 8, design: .monospaced))
                     if item.legendary { Text("★ LEGENDARY") }
                     if item.equipped { Text("EQUIPPED") }
                     Text("COUNT  \(item.count)")
@@ -160,6 +162,12 @@ struct InventoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(7)
                 .overlay(Rectangle().stroke(.green.opacity(0.45), lineWidth: 1))
+                .confirmationDialog("ITEM ACTIONS", isPresented: $showingActions) {
+                    Button("USE / EQUIP") { }
+                    Button("DROP") { }
+                    Button("FAVORITE") { }
+                    Button("CANCEL", role: .cancel) { }
+                } message: { Text("Item actions remain capability-gated until their RPC support is verified.") }
             } else {
                 Text("SELECT ITEM").frame(maxWidth: .infinity, maxHeight: .infinity)
             }

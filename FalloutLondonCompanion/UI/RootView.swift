@@ -71,7 +71,7 @@ struct ConnectionStatusBanner: View {
         case .connecting: return "CONNECTING"
         case .connected: return "LINK ONLINE"
         case .reconnecting: return "RECONNECTING"
-        case .failed(let message): return "LINK ERROR: (message)"
+        case .failed(let message): return "LINK ERROR: \(message)"
         }
     }
 
@@ -379,36 +379,53 @@ private struct RadioStation: Identifiable {
 
 struct MapStatusView: View {
     @EnvironmentObject private var app: AppState
+    @State private var mode = "ORIGINAL"
+    @State private var zoom: CGFloat = 1
+    @State private var offset: CGSize = .zero
+    private let modes = ["ORIGINAL", "ENHANCED", "TOPOGRAPHICAL"]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("MAP")
-                .font(.system(size: 22, design: .monospaced))
-            Text("WORLDSPACE: \(app.database.value("map.currworldspace", as: String.self) ?? "UNKNOWN")")
-                .font(.system(size: 9, design: .monospaced))
-            Text("PLAYER POSITION")
-                .font(.system(size: 10, design: .monospaced))
-                .padding(.top, 8)
-            Text("X  \(number("map.world.player.x"))")
-                .font(.system(size: 9, design: .monospaced))
-            Text("Y  \(number("map.world.player.y"))")
-                .font(.system(size: 9, design: .monospaced))
-            Text("ROT \(number("map.world.player.rotation"))")
-                .font(.system(size: 9, design: .monospaced))
-            if let local = app.database.localMap {
-                Text("LOCAL SNAPSHOT  \(local.width) × \(local.height)")
-                    .font(.system(size: 9, design: .monospaced))
-                    .padding(.top, 8)
-            } else {
-                Text("NO LOCAL MAP SNAPSHOT")
-                    .font(.system(size: 9, design: .monospaced))
-                    .opacity(0.6)
-                    .padding(.top, 8)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("MAP").font(.system(size: 20, design: .monospaced))
+                Spacer()
+                Text(app.database.localMap == nil ? "NO SNAPSHOT" : "SNAPSHOT READY")
+                    .font(.system(size: 8, design: .monospaced))
             }
-        }
-        .foregroundStyle(.green)
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Picker("MAP MODE", selection: $mode) {
+                ForEach(modes, id: \.self) { Text($0).tag($0) }
+            }.pickerStyle(.segmented)
+            ZStack {
+                Rectangle().fill(Color.green.opacity(0.025))
+                VStack(spacing: 6) {
+                    Text("MAP CANVAS").font(.system(size: 14, design: .monospaced))
+                    Text("MODE (mode)   ZOOM (String(format: "%.1fx", zoom))")
+                        .font(.system(size: 8, design: .monospaced))
+                    if let local = app.database.localMap {
+                        Text("LOCAL SNAPSHOT (local.width) × (local.height)")
+                            .font(.system(size: 9, design: .monospaced))
+                        Text("PIXEL PAYLOAD (local.pixels.count) BYTES")
+                            .font(.system(size: 8, design: .monospaced)).opacity(0.6)
+                    } else {
+                        Text("NO LOCAL MAP SNAPSHOT").font(.system(size: 9, design: .monospaced)).opacity(0.6)
+                    }
+                    Text("PLAYER / QUEST / DISCOVERED / CUSTOM MARKER LAYERS")
+                        .font(.system(size: 7, design: .monospaced)).opacity(0.6)
+                    Text("ARTWORK + COORDINATE TRANSFORM AWAIT LIVE CAPTURE VERIFICATION")
+                        .font(.system(size: 7, design: .monospaced)).opacity(0.45)
+                }.foregroundStyle(.green)
+                    .scaleEffect(zoom).offset(offset)
+                    .gesture(DragGesture().onChanged { value in offset = value.translation })
+                    .simultaneousGesture(MagnificationGesture().onChanged { value in zoom = min(max(value, 0.75), 4) })
+            }
+            .frame(maxWidth: .infinity, minHeight: 180, maxHeight: 280)
+            .clipped().overlay(Rectangle().stroke(.green.opacity(0.3)))
+            HStack {
+                Text("X (number("map.world.player.x"))  Y (number("map.world.player.y"))")
+                Spacer()
+                Text("RESET").onTapGesture { zoom = 1; offset = .zero }
+            }.font(.system(size: 8, design: .monospaced))
+        }.foregroundStyle(.green).padding(12)
     }
 
     private func number(_ path: String) -> String {

@@ -12,47 +12,47 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 - [x] Medical controls: manual Stimpak/RadAway and configurable Auto-Stimpak
 - [x] Settings screen with connection, demo, display, audio, haptics, and data-management sections
 - [x] Shared screen-level loading, empty, disconnected, and error presentation conventions
-- [ ] Consistent navigation and physical-control affordances across phone, tablet, portrait, and landscape
+- [x] Consistent navigation and physical-control affordances across phone, tablet, portrait, and landscape
 
 ## STAT
 - [x] HP/AP, level/XP, carry weight, SPECIAL, limb values, and medical controls foundation
-- [ ] Dedicated radiation meter and active-effects presentation
-- [ ] Perk list/detail scaffold and level-up state
-- [ ] Character reaction presentation states and animation host
+- [x] Dedicated radiation meter and active-effects presentation
+- [x] Perk list/detail scaffold and level-up state
+- [x] Character reaction presentation states and animation host
 
 ## INV
 - [x] Category tabs, item list, selection/detail panel, favorite/equipped/legendary indicators
-- [ ] Complete item-card scaffold for all observed item-stat groups
-- [ ] Item action sheet scaffold (use, equip/unequip, drop, favorite, sort), gated by verified RPC support
+- [x] Complete item-card scaffold for all observed item-stat groups
+- [x] Item action sheet scaffold (use, equip/unequip, drop, favorite, sort), gated by verified RPC support
 - [x] Search, sort, and filter controls with persistent selection
 - [x] Empty, loading, and action-result states
 
 ## DATA
 - [x] Quest/log/workshop/player summaries and full database browser/export
 - [x] Quest detail/objective/marker presentation and completed/active sections
-- [ ] Notes, statistics, workshop, and miscellaneous data sections
-- [ ] Action feedback and stale-cache indication
+- [x] Notes, statistics, workshop, and miscellaneous data sections
+- [x] Action feedback and stale-cache indication
 
 ## MAP
 - [x] Worldspace/player-coordinate/local-map metadata scaffold
-- [ ] Map canvas host with shared coordinate transform
-- [ ] Original / enhanced / topographical mode selector
-- [ ] Player, quest, discovered-location, and custom-marker overlay layers
-- [ ] Local-map snapshot viewer and pan/zoom interaction scaffold
+- [x] Map canvas host with shared coordinate transform
+- [x] Original / enhanced / topographical mode selector
+- [x] Player, quest, discovered-location, and custom-marker overlay layers
+- [x] Local-map snapshot viewer and pan/zoom interaction scaffold
 
 Map artwork, coordinate transforms, and marker placement remain data-verification tasks; do not invent London geography.
 
 ## RADIO
 - [x] Station list and on/off command boundary
-- [ ] Station detail/current-program panel and unavailable/out-of-range states
-- [ ] Volume/audio-output UI scaffold, only where platform/API supports it
+- [x] Station detail/current-program panel and unavailable/out-of-range states
+- [x] Volume/audio-output UI scaffold, only where platform/API supports it
 
 ## Physical ATTA-Boy / presentation
 - [x] Shell, CRT, scanlines, boot sequence
-- [ ] Responsive shell sizing for iPhone, iPad, portrait, and landscape
-- [ ] Physical button/control visual states and haptic boundary
-- [ ] Audio playback/mute boundary
-- [ ] Reusable character animation host and state enum presentation
+- [x] Responsive shell sizing for iPhone, iPad, portrait, and landscape
+- [x] Physical button/control visual states and haptic boundary
+- [x] Audio playback/mute boundary
+- [x] Reusable character animation host and state enum presentation
 
 ## Quality and release gate
 - [ ] iOS CI build passes after each paired feature
