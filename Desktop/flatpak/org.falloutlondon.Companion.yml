@@ -21,10 +21,11 @@ modules:
     sources:
       - type: dir
         path: ../build/compose/binaries/main-release/app/Fallout London Companion
+        dest: app
       - type: script
         dest-filename: launcher
         commands:
-          - exec /app/opt/fallout-london-companion/bin/Fallout\ London\ Companion
+          - exec /app/opt/fallout-london-companion/bin/Fallout\\ London\\ Companion
       - type: file
         path: ../src/main/resources/org.falloutlondon.Companion.desktop
       - type: file
