@@ -1,16 +1,13 @@
 name: Build Fallout London Companion Linux
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-
 concurrency:
   group: linux-build-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   build-linux:
     runs-on: ubuntu-24.04
@@ -32,7 +29,7 @@ jobs:
       - name: Install Linux packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder desktop-file-utils
+          sudo apt-get install -y flatpak flatpak-builder desktop-file-utils imagemagick
       - name: Build DEB, RPM and desktop app image
         run: gradle packageReleaseDeb packageReleaseRpm createReleaseDistributable --no-daemon
       - name: Create AppImage AppDir
@@ -52,6 +49,8 @@ jobs:
           chmod +x appimagetool.AppImage
           VERSION="$(cat ../VERSION)"
           ARCH=x86_64 APPIMAGETOOL_APP_NAME="Fallout London Companion" VERSION="$VERSION" ./appimagetool.AppImage --no-appstream "$GITHUB_WORKSPACE/AppDir" "$GITHUB_WORKSPACE/Fallout London Companion-$VERSION-x86_64.AppImage"
+      - name: Prepare Flatpak icon
+        run: magick src/main/resources/app.png -resize '512x512>' src/main/resources/app-flatpak.png
       - name: Build Flatpak
         run: |
           flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo

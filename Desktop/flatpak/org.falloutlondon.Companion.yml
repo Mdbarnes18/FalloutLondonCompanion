@@ -17,7 +17,7 @@ modules:
       - cp -a app/. /app/opt/fallout-london-companion/
       - install -Dm755 launcher /app/bin/fallout-london-companion
       - install -Dm644 org.falloutlondon.Companion.desktop /app/share/applications/org.falloutlondon.Companion.desktop
-      - install -Dm644 app.png /app/share/icons/hicolor/1024x1024/apps/org.falloutlondon.Companion.png
+      - install -Dm644 app.png /app/share/icons/hicolor/512x512/apps/org.falloutlondon.Companion.png
     sources:
       - type: dir
         path: ../build/compose/binaries/main-release/app/Fallout London Companion
@@ -29,4 +29,5 @@ modules:
       - type: file
         path: ../src/main/resources/org.falloutlondon.Companion.desktop
       - type: file
-        path: ../src/main/resources/app.png
+        path: ../src/main/resources/app-flatpak.png
+        dest-filename: app.png
