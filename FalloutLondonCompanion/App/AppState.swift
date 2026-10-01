@@ -8,6 +8,7 @@ final class AppState: ObservableObject {
     @Published var bootPhase: BootPhase = .off
     @Published var selectedTab: MainTab = .stat
     @Published var demoMode = false
+    @Published var lastActionStatus: String?
 
     let connectionService = ConnectionService()
     let database = PipboyDatabase()
@@ -104,6 +105,15 @@ final class AppState: ObservableObject {
     }
 
     private func apply(_ update: PipboyUpdate) {
+        if case .commandResponse(let response) = update {
+            lastActionStatus = commandResponseMessage(response.json)
+            let message = lastActionStatus
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(4))
+                guard let self, self.lastActionStatus == message else { return }
+                self.lastActionStatus = nil
+            }
+        }
         database.apply(update)
         if let snapshot = database.snapshotData() {
             UserDefaults.standard.set(snapshot, forKey: "pipboyCache")

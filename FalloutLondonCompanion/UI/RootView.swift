@@ -220,6 +220,10 @@ struct QuestDataSection: View {
     private func questRow(key: String, node: UInt32) -> some View {
         let name = app.database.objectValue(atNode: node, key: "text")
         let active = app.database.objectValue(atNode: node, key: "active")
+        let formID = app.database.objectValue(atNode: node, key: "formid")
+        let instance = app.database.objectValue(atNode: node, key: "instance")
+        let type = app.database.objectValue(atNode: node, key: "type")
+        let enabled = app.database.objectValue(atNode: node, key: "enabled")
         let objectives = app.database.objectNodeID(atNode: node, key: "objectives").map { app.database.objectChildren(atNode: $0) } ?? [:]
         let title: String = {
             if case .string(let value) = name, !value.isEmpty { return value }
@@ -230,16 +234,29 @@ struct QuestDataSection: View {
             return false
         }()
         VStack(alignment: .leading, spacing: 4) {
-            Button {
-                expandedQuest = expandedQuest == key ? nil : key
-            } label: {
-                HStack {
-                    Text(isActive ? "ACTIVE" : "SET").font(.system(size: 8, design: .monospaced))
-                    Text(title).font(.system(size: 10, design: .monospaced)).lineLimit(1)
-                    Spacer()
-                    Text(expandedQuest == key ? "−" : "+").font(.system(size: 11, design: .monospaced))
+            HStack {
+                Button {
+                    expandedQuest = expandedQuest == key ? nil : key
+                } label: {
+                    HStack {
+                        Text(isActive ? "ACTIVE" : "VIEW").font(.system(size: 8, design: .monospaced))
+                        Text(title).font(.system(size: 10, design: .monospaced)).lineLimit(1)
+                        Spacer()
+                        Text(expandedQuest == key ? "−" : "+").font(.system(size: 11, design: .monospaced))
+                    }
+                }.buttonStyle(.plain)
+
+                if !isActive, enabled != .bool(false),
+                   case .uint32(let form) = formID,
+                   case .uint32(let instanceID) = instance,
+                   case .uint32(let questType) = type {
+                    Button("SET ACTIVE") {
+                        app.connectionService.sendRPC(type: 5, args: [form, instanceID, questType])
+                    }
+                    .font(.system(size: 8, design: .monospaced))
+                    .buttonStyle(.plain)
                 }
-            }.buttonStyle(.plain)
+            }
             if expandedQuest == key {
                 if objectives.isEmpty {
                     Text("NO OBJECTIVES").font(.system(size: 8, design: .monospaced)).opacity(0.6)
