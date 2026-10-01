@@ -8,7 +8,6 @@ plugins {
 }
 group = "com.falloutlondon"
 version = file("../VERSION").readText().trim()
-repositories { google(); mavenCentral(); gradlePluginPortal() }
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
