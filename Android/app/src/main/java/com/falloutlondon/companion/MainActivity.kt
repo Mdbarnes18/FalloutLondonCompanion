@@ -592,6 +592,40 @@ fun MapScreen(db: PipboyDatabase) {
     }
 }
 
+
+@Composable
+fun RadioPanel(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.coroutines.CoroutineScope) {
+    val stations = db.objectChildren("radio").toSortedMap()
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("RADIO", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 22.sp)
+        Text("LIVE STATION DATA", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        if (stations.isEmpty()) {
+            Text("NO RADIO DATA RECEIVED", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        } else {
+            stations.forEach { (key, nodeId) ->
+                fun str(name: String): String? = (db.objectValue(nodeId, name) as? PipboyValue.StringValue)?.value
+                fun bool(name: String): Boolean? = (db.objectValue(nodeId, name) as? PipboyValue.Bool)?.value
+                val name = str("name") ?: key
+                val frequency = str("frequency")
+                val text = str("text")
+                val active = bool("active") ?: false
+                val inRange = bool("inrange") ?: true
+                if (inRange || active) {
+                    Column(Modifier.fillMaxWidth().border(1.dp, Phosphor.copy(alpha = if (active) .55f else .2f)).padding(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(name, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                            Spacer(Modifier.weight(1f))
+                            if (active) Text("ON AIR", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                        }
+                        frequency?.let { Text(it, color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp) }
+                        text?.let { Text(it, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp) }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun DataSummarySection(db: PipboyDatabase, title: String, path: String) {
     val children = db.objectChildren(path)
