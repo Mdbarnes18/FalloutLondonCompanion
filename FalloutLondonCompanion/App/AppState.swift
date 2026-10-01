@@ -59,6 +59,18 @@ final class AppState: ObservableObject {
         medical.useRadAway(database: database, connection: connectionService)
     }
 
+    func reconnect() {
+        connectionService.disconnect()
+        if !demoMode { connectionService.discoverAndConnect() }
+    }
+
+    func clearCachedData() {
+        UserDefaults.standard.removeObject(forKey: "pipboyCache")
+        database.reset()
+        player = .demo
+        inventory.refresh(from: database)
+    }
+
     func setDemoMode(_ enabled: Bool) {
         demoMode = enabled
         UserDefaults.standard.set(enabled, forKey: "demoMode")

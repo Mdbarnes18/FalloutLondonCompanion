@@ -60,6 +60,7 @@ fun FalloutLondonApp() {
     var demoMode by remember { mutableStateOf(loadDemoMode()) }
     var autoStimpak by remember { mutableStateOf(loadAutoStimpak()) }
     var stimpakThreshold by remember { mutableStateOf(loadAutoStimpakThreshold()) }
+    var showingSettings by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (demoMode) {
@@ -122,9 +123,28 @@ fun FalloutLondonApp() {
     ) {
         AttaBoyShell {
             Column(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("FOLON // ATTA-BOY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                    Spacer(Modifier.weight(1f))
+                    Text(if (showingSettings) "MAIN" else "SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                        modifier = Modifier.clickable { showingSettings = !showingSettings }.padding(5.dp))
+                }
                 ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
-                    when (selectedTab) {
+                    if (showingSettings) {
+                        SettingsPanel(
+                            demoMode = demoMode, autoStimpak = autoStimpak, threshold = stimpakThreshold, connectionState = connectionState,
+                            onDemoMode = { enabled ->
+                                demoMode = enabled; saveDemoMode(enabled)
+                                if (enabled) { scope.launch { connection.disconnect() }; loadCachedDatabase(db); player = PlayerState.from(db, player); inventory.refresh(db) }
+                                else scope.launch { runCatching { connection.discoverAndConnect() } }
+                            },
+                            onAutoStimpak = { enabled -> autoStimpak = enabled; medical.autoStimpakEnabled = enabled; saveAutoStimpak(enabled) },
+                            onThreshold = { value -> stimpakThreshold = value; medical.threshold = value; saveAutoStimpakThreshold(value) },
+                            onReconnect = { scope.launch { connection.disconnect(); if (!demoMode) runCatching { connection.discoverAndConnect() } } },
+                            onClearCache = { clearCachedDatabase(); db.reset(); player = PlayerState(); inventory.refresh(db) }
+                        )
+                    } else when (selectedTab) {
                         MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold,
                             onAutoStimpakChanged = { enabled ->
                                 autoStimpak = enabled
@@ -168,7 +188,7 @@ fun FalloutLondonApp() {
                     MainTab.entries.forEach { tab ->
                         Text(
                             text = tab.label,
-                            modifier = Modifier.weight(1f).clickable { selectedTab = tab },
+                            modifier = Modifier.weight(1f).clickable { showingSettings = false; selectedTab = tab },
                             color = if (selectedTab == tab) Phosphor else Color.Gray,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp
@@ -185,6 +205,40 @@ fun FalloutLondonApp() {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun SettingsPanel(
+    demoMode: Boolean, autoStimpak: Boolean, threshold: Double, connectionState: String,
+    onDemoMode: (Boolean) -> Unit, onAutoStimpak: (Boolean) -> Unit, onThreshold: (Double) -> Unit,
+    onReconnect: () -> Unit, onClearCache: () -> Unit
+) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("SETTINGS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+        Text("CONNECTION", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Text(connectionState, color = Phosphor.copy(alpha = .75f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        Text("RECONNECT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+            modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { onReconnect() }.padding(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("DEMO / CACHED DATA", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Spacer(Modifier.weight(1f)); Switch(checked = demoMode, onCheckedChange = onDemoMode)
+        }
+        Text("DISPLAY & FEEDBACK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Text("CRT SCANLINES / AUDIO / HAPTICS", color = Phosphor.copy(alpha = .7f), fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        Text("Preferences and hardware feedback boundaries are scaffolded; platform playback/haptic integration remains pending.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("MEDICAL", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("AUTO-STIMPAK", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Spacer(Modifier.weight(1f)); Switch(checked = autoStimpak, onCheckedChange = onAutoStimpak)
+        }
+        Text("AUTO-STIMPAK THRESHOLD " + (threshold * 100).toInt() + "%", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        Slider(value = threshold.toFloat(), onValueChange = { onThreshold(it.toDouble()) }, valueRange = 0.10f..0.90f, steps = 15)
+        Text("DATA MANAGEMENT", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+        Text("CLEAR CACHED DATABASE", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp,
+            modifier = Modifier.border(1.dp, Phosphor.copy(alpha = .35f)).clickable { onClearCache() }.padding(6.dp))
+        Text("Cache clearing removes the local snapshot only; it does not alter game data.", color = Phosphor.copy(alpha = .55f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Text("DATABASE BROWSER / EXPORT AVAILABLE FROM DATA", color = Phosphor.copy(alpha = .65f), fontFamily = FontFamily.Monospace, fontSize = 8.sp)
     }
 }
 
@@ -709,6 +763,9 @@ private fun loadAutoStimpakThreshold(): Double = appContext.getSharedPreferences
 private fun saveAutoStimpakThreshold(value: Double) { appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putFloat("autoStimpakThreshold", value.toFloat()).apply() }
 private fun saveDemoMode(value: Boolean) {
     appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().putBoolean("demoMode", value).apply()
+}
+private fun clearCachedDatabase() {
+    if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE).edit().remove("cache").apply()
 }
 private fun loadCachedDatabase(db: PipboyDatabase) {
     if (::appContext.isInitialized) appContext.getSharedPreferences("attaboy", android.content.Context.MODE_PRIVATE)

@@ -94,7 +94,11 @@ struct SettingsScaffoldView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("SETTINGS").font(.system(size: 20, design: .monospaced))
                 Text("CONNECTION").font(.system(size: 11, design: .monospaced))
-                Text(String(describing: app.connection)).font(.system(size: 9, design: .monospaced)).opacity(0.75)
+                HStack {
+                    Text(String(describing: app.connection)).font(.system(size: 9, design: .monospaced)).opacity(0.75)
+                    Spacer()
+                    Button("RECONNECT") { app.reconnect() }.font(.system(size: 8, design: .monospaced))
+                }
                 Toggle("DEMO / CACHED DATA", isOn: Binding(get: { app.demoMode }, set: { app.setDemoMode($0) })).font(.system(size: 10, design: .monospaced))
                 Divider().overlay(.green.opacity(0.3))
                 Text("DISPLAY & FEEDBACK").font(.system(size: 11, design: .monospaced))
@@ -114,6 +118,10 @@ struct SettingsScaffoldView: View {
                 }
                 Divider().overlay(.green.opacity(0.3))
                 NavigationLink("OPEN DATABASE BROWSER") { DataBrowserView() }.font(.system(size: 10, design: .monospaced))
+                Button("CLEAR CACHED DATABASE") { app.clearCachedData() }
+                    .font(.system(size: 9, design: .monospaced))
+                Text("Cache clearing removes the local snapshot only; it does not alter game data.")
+                    .font(.system(size: 8, design: .monospaced)).opacity(0.6)
                 Text("Unofficial companion interface. Game actions depend on verified protocol support.").font(.system(size: 8, design: .monospaced)).opacity(0.6)
             }.foregroundStyle(.green).padding(14)
         }

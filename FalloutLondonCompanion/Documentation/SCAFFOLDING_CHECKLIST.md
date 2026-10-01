@@ -12,18 +12,22 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 - [x] Medical controls: manual Stimpak/RadAway and configurable Auto-Stimpak
 - [x] Settings screen with connection, demo, display, audio, haptics, and data-management sections
 - [x] Shared screen-level loading, empty, disconnected, and error presentation conventions
-- [x] Consistent navigation and physical-control affordances across phone, tablet, portrait, and landscape
+- [ ] Consistent navigation and physical-control affordances across phone, tablet, portrait, and landscape
 
 ## STAT
 - [x] HP/AP, level/XP, carry weight, SPECIAL, limb values, and medical controls foundation
 - [x] Dedicated radiation meter and active-effects presentation
+- [ ] Live active-effects extraction from the verified database structure
 - [x] Perk list/detail scaffold and level-up state
+- [ ] Live perk data and verified level-up RPC
 - [x] Character reaction presentation states and animation host
+- [ ] Character animation assets/playback
 
 ## INV
 - [x] Category tabs, item list, selection/detail panel, favorite/equipped/legendary indicators
 - [x] Complete item-card scaffold for all observed item-stat groups
 - [x] Item action sheet scaffold (use, equip/unequip, drop, favorite, sort), gated by verified RPC support
+- [ ] Verified item-action RPC argument handling
 - [x] Search, sort, and filter controls with persistent selection
 - [x] Empty, loading, and action-result states
 
@@ -32,26 +36,33 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 - [x] Quest detail/objective/marker presentation and completed/active sections
 - [x] Notes, statistics, workshop, and miscellaneous data sections
 - [x] Action feedback and stale-cache indication
+- [ ] Command-response parsing and action result reconciliation
 
 ## MAP
 - [x] Worldspace/player-coordinate/local-map metadata scaffold
 - [x] Map canvas host with shared coordinate transform
 - [x] Original / enhanced / topographical mode selector
-- [x] Player, quest, discovered-location, and custom-marker overlay layers
+- [x] Player, quest, discovered-location, and custom-marker overlay layer boundary
+- [ ] Verified marker data extraction and placement
 - [x] Local-map snapshot viewer and pan/zoom interaction scaffold
+- [ ] Verified local-map pixel rendering
 
 Map artwork, coordinate transforms, and marker placement remain data-verification tasks; do not invent London geography.
 
 ## RADIO
 - [x] Station list and on/off command boundary
+- [ ] Verified ToggleRadioStation RPC argument handling
 - [x] Station detail/current-program panel and unavailable/out-of-range states
 - [x] Volume/audio-output UI scaffold, only where platform/API supports it
+- [ ] Platform audio playback/output implementation
 
 ## Physical ATTA-Boy / presentation
 - [x] Shell, CRT, scanlines, boot sequence
 - [x] Responsive shell sizing for iPhone, iPad, portrait, and landscape
-- [x] Physical button/control visual states and haptic boundary
-- [x] Audio playback/mute boundary
+- [x] Physical button/control visual-state boundary
+- [ ] Platform haptic implementation
+- [x] Audio playback/mute preference boundary
+- [ ] Audio playback implementation
 - [x] Reusable character animation host and state enum presentation
 
 ## Quality and release gate

@@ -14,7 +14,7 @@ struct StatusView: View {
                 Text(String(format: "WT   %05.1f / %05.1f", app.player.carryWeight, app.player.maxWeight))
                     .font(.system(size: 14, design: .monospaced))
                 ProgressView(value: app.player.xpProgress).tint(.green)
-                Text("LEVEL (app.player.level)   PERK POINTS (app.player.perkPoints)")
+                Text("LEVEL \\(app.player.level)   PERK POINTS \\(app.player.perkPoints)")
                     .font(.system(size: 11, design: .monospaced))
                 Text("SPECIAL   " + app.player.special.map(String.init).joined(separator: " "))
                     .font(.system(size: 12, design: .monospaced))
@@ -30,7 +30,7 @@ struct StatusView: View {
                     Toggle("AUTO-STIMPAK", isOn: Binding(get: { app.medical.autoStimpakEnabled }, set: { app.setAutoStimpakEnabled($0) }))
                         .font(.system(size: 9, design: .monospaced))
                     HStack {
-                        Text("THRESHOLD (Int(app.medical.threshold * 100))%")
+                        Text("THRESHOLD \\(Int(app.medical.threshold * 100))%")
                         Slider(value: Binding(get: { app.medical.threshold }, set: { app.setAutoStimpakThreshold($0) }), in: 0.10...0.90, step: 0.05)
                     }.font(.system(size: 8, design: .monospaced))
                 }
@@ -80,7 +80,7 @@ private struct PerkScaffold: View {
             HStack {
                 Text("PERKS").font(.system(size: 10, design: .monospaced))
                 Spacer()
-                Text("(perkPoints) AVAILABLE").font(.system(size: 8, design: .monospaced))
+                Text("\\(perkPoints) AVAILABLE").font(.system(size: 8, design: .monospaced))
             }
             Button(perkPoints > 0 ? "OPEN PERK SELECTION" : "NO LEVEL-UP AVAILABLE") { showingLevelUp = true }
                 .disabled(perkPoints == 0)
