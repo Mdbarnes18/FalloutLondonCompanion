@@ -305,67 +305,77 @@ fun Gauge(label: String, value: Double, max: Double) {
 }
 
 @Composable
-fun InventoryScreen(
-    store: InventoryStore,
-    category: InventoryCategory,
-    onCategory: (InventoryCategory) -> Unit
-) {
-    var selectedId by remember { mutableStateOf<String?>(null) }
+fun InventoryScreen(store: InventoryStore, category: InventoryCategory, onCategory: (InventoryCategory) -> Unit) {
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var search by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("ALL") }
+    var sort by rememberSaveable { mutableStateOf("NAME") }
+
+    val baseItems = store.items(category)
+    val visibleItems = remember(baseItems, search, filter, sort) {
+        var result = baseItems
+        if (search.isNotBlank()) result = result.filter { it.name.contains(search, ignoreCase = true) }
+        result = when (filter) {
+            "EQUIPPED" -> result.filter { it.equipped }
+            "FAVORITE" -> result.filter { it.favoriteSlot != null }
+            "LEGENDARY" -> result.filter { it.legendary }
+            else -> result
+        }
+        when (sort) {
+            "COUNT" -> result.sortedWith(compareByDescending<InventoryItem> { it.count }.thenBy { it.name.lowercase() })
+            "VALUE" -> result.sortedWith(compareByDescending<InventoryItem> { it.value }.thenBy { it.name.lowercase() })
+            "WEIGHT" -> result.sortedWith(compareBy<InventoryItem> { it.weight }.thenBy { it.name.lowercase() })
+            else -> result.sortedBy { it.name.lowercase() }
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
-        Text("INV", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("INV", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 20.sp)
+            Spacer(Modifier.weight(1f))
+            Text("${visibleItems.size} / ${baseItems.size} ITEMS", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp)) {
             InventoryCategory.entries.forEach { itemCategory ->
-                Text(
-                    itemCategory.label,
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .clickable {
-                            selectedId = null
-                            onCategory(itemCategory)
-                        },
-                    color = if (category == itemCategory) Color.Black else Phosphor,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 9.sp
-                )
+                Text(itemCategory.label, modifier = Modifier.padding(end = 8.dp).clickable {
+                    selectedId = null
+                    onCategory(itemCategory)
+                }, color = if (category == itemCategory) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             }
         }
-
-        Row(Modifier.fillMaxSize()) {
-            Column(
-                Modifier.weight(1f).verticalScroll(rememberScrollState())
-            ) {
-                store.items.forEach { item ->
-                    Text(
-                        item.name + "  " +
-                            (if (item.equipped) "E" else "") +
-                            (if (item.favoriteSlot != null) " ★" else "") +
-                            (if (item.count > 1) " x" + item.count else ""),
-                        color = if (selectedId == item.id) Color.Black else Phosphor,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (selectedId == item.id) Phosphor else Color.Transparent)
-                            .clickable { selectedId = item.id }
-                            .padding(vertical = 5.dp, horizontal = 4.dp)
-                    )
-                }
-                if (store.items.isEmpty()) {
-                    Text("NO ITEMS", color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                }
+        TextField(value = search, onValueChange = { search = it }, singleLine = true,
+            placeholder = { Text("SEARCH ITEMS", fontFamily = FontFamily.Monospace, fontSize = 9.sp) },
+            modifier = Modifier.fillMaxWidth().height(48.dp))
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("ALL", "EQUIPPED", "FAVORITE", "LEGENDARY").forEach { option ->
+                Text("FILTER: $option", color = if (filter == option) Color.Black else Phosphor,
+                    fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                    modifier = Modifier.background(if (filter == option) Phosphor else Color.Transparent)
+                        .border(1.dp, Phosphor.copy(alpha = .3f)).clickable { filter = option }.padding(5.dp))
             }
-
+            listOf("NAME", "COUNT", "VALUE", "WEIGHT").forEach { option ->
+                Text("SORT: $option", color = if (sort == option) Color.Black else Phosphor,
+                    fontFamily = FontFamily.Monospace, fontSize = 8.sp,
+                    modifier = Modifier.background(if (sort == option) Phosphor else Color.Transparent)
+                        .border(1.dp, Phosphor.copy(alpha = .3f)).clickable { sort = option }.padding(5.dp))
+            }
+        }
+        Row(Modifier.fillMaxSize()) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                visibleItems.forEach { item ->
+                    Text(item.name + (if (item.equipped) " E" else "") + (if (item.favoriteSlot != null) " ★" else "") +
+                        (if (item.legendary) " L" else "") + (if (item.count > 1) " x" + item.count else ""),
+                        color = if (selectedId == item.id) Color.Black else Phosphor, fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                        modifier = Modifier.fillMaxWidth().background(if (selectedId == item.id) Phosphor else Color.Transparent)
+                            .clickable { selectedId = item.id }.padding(vertical = 5.dp, horizontal = 4.dp))
+                }
+                if (visibleItems.isEmpty()) Text(if (search.isBlank()) "NO MATCHING ITEMS" else "NO SEARCH RESULTS",
+                    color = Phosphor.copy(alpha = .6f), fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+            }
             val item = store.items.firstOrNull { it.id == selectedId }
-            Column(
-                Modifier.weight(1f).fillMaxHeight()
-                    .padding(start = 8.dp)
-                    .border(1.dp, Phosphor.copy(alpha = .35f))
-                    .padding(7.dp)
-            ) {
-                if (item == null) {
-                    Text("SELECT ITEM", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                } else {
+            Column(Modifier.weight(1f).fillMaxHeight().padding(start = 8.dp).border(1.dp, Phosphor.copy(alpha = .35f)).padding(7.dp)) {
+                if (item == null) Text("SELECT ITEM", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+                else {
                     Text(item.name, color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 15.sp)
                     if (item.legendary) Text("★ LEGENDARY", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     if (item.equipped) Text("EQUIPPED", color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
@@ -376,9 +386,7 @@ fun InventoryScreen(
                     item.armor?.let { Text("ARMOR  " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
                     item.radiationResistance?.let { Text("RAD RES " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
                     item.energyResistance?.let { Text("ENG RES " + format0(it), color = Phosphor, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
-                    item.description?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp, maxLines = 5)
-                    }
+                    item.description?.takeIf { it.isNotBlank() }?.let { Text(it, color = Phosphor.copy(alpha = .8f), fontFamily = FontFamily.Monospace, fontSize = 9.sp, maxLines = 5) }
                 }
             }
         }
