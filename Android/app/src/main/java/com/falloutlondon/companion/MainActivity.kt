@@ -157,7 +157,7 @@ fun FalloutLondonApp() {
                             }
                         }
                         MainTab.MAP -> MapScreen(db)
-                        MainTab.RADIO -> RadioScreen(db, connection, scope)
+                        MainTab.RADIO -> RadioPanel(db, connection, scope)
                     }
                 }
 
