@@ -122,6 +122,14 @@ final class AppState: ObservableObject {
         inventory.refresh(from: database)
         medical.consume(player: player, database: database, connection: connectionService)
     }
+    private func commandResponseMessage(_ json: Any) -> String {
+        guard let object = json as? [String: Any] else { return "ACTION RESPONSE RECEIVED" }
+        if let error = object["error"] as? String, !error.isEmpty { return "ACTION ERROR: \(error)" }
+        if let message = object["message"] as? String, !message.isEmpty { return "ACTION: \(message)" }
+        if let status = object["status"] as? String, !status.isEmpty { return "ACTION: \(status.uppercased())" }
+        if let success = object["success"] as? Bool { return success ? "ACTION COMPLETE" : "ACTION FAILED" }
+        return "ACTION RESPONSE RECEIVED"
+    }
 }
 
 enum ConnectionState: Equatable { case disconnected, discovering, connecting, connected, reconnecting, failed(String) }
