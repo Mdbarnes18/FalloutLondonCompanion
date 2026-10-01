@@ -1,6 +1,6 @@
 # Fallout London Companion
 
-Native companion app for Fallout: London, with matching native clients for iPhone, iPad, Android phones, and Android tablets. The clients share the same verified Fallout 4/Fallout: London companion-protocol behavior while using platform-native UI and build pipelines.
+Native companion app for Fallout: London, with native clients for iPhone, iPad, Android phones/tablets, Windows, and Linux. The clients share the same verified Fallout 4/Fallout: London companion-protocol behavior while using platform-native UI and build pipelines.
 
 <p align="center">
   <img src="docs/FalloutLondonCompanion.svg" alt="Fallout London Companion artwork" width="256">
@@ -43,6 +43,34 @@ Native companion app for Fallout: London, with matching native clients for iPhon
 - Manual Stimpak/RadAway protocol paths
 - Configurable Auto-Stimpak threshold
 - GitHub Actions APK builds
+
+### Windows
+- Windows desktop client
+- Kotlin + Compose Multiplatform
+- Same five-tab ATTA-BOY information architecture
+- STAT, INV, DATA, MAP and RADIO foundations
+- Database browser with search
+- Copy-all database export
+- TXT database export
+- Persistent cached-data / Demo Mode
+- Auto-Stimpak and manual Stimpak/RadAway protocol paths
+- Windows installer (MSI)
+- Portable Windows EXE
+
+### Linux
+- Linux desktop client
+- Kotlin + Compose Multiplatform
+- Same five-tab ATTA-BOY information architecture
+- STAT, INV, DATA, MAP and RADIO foundations
+- Database browser with search
+- Copy-all database export
+- TXT database export
+- Persistent cached-data / Demo Mode
+- Auto-Stimpak and manual Stimpak/RadAway protocol paths
+- AppImage
+- Flatpak
+- DEB
+- RPM
 
 ## Interface
 
@@ -127,7 +155,7 @@ Fallout: London is a Team FOLON project. This companion is a separate applicatio
 
 ## Platform flow
 
-The project runs as four native device targets while keeping the game-facing behavior aligned:
+The project runs as native mobile and desktop targets while keeping the game-facing behavior aligned:
 
 **iPhone / iPad**
 1. Develop the shared game/protocol behavior in the SwiftUI client.
@@ -144,6 +172,15 @@ The project runs as four native device targets while keeping the game-facing beh
 3. GitHub Actions builds the Android APK.
 4. CI validates and uploads the APK artifact.
 5. Install the APK on an Android phone or tablet for device testing.
+6. Test the same game-facing flows against Fallout: London.
+7. Fix, refine, commit, push, and repeat.
+
+**Windows / Linux desktop**
+1. Mirror the same verified protocol, data, and gameplay-facing behavior in the Compose Multiplatform desktop client.
+2. Push changes to GitHub.
+3. GitHub Actions builds the Windows and Linux packages.
+4. CI validates the installer/portable Windows build and Linux AppImage/Flatpak/DEB/RPM packages.
+5. Install on the target desktop platform for device testing.
 6. Test the same game-facing flows against Fallout: London.
 7. Fix, refine, commit, push, and repeat.
 
@@ -171,6 +208,22 @@ GitHub Actions builds the Android application and uploads:
 
 The APK is intended for Android phone/tablet device testing.
 
+### Windows build
+
+GitHub Actions builds two Windows packages:
+
+- `Fallout London Companion Windows Installer.msi`
+- `Fallout London Companion Windows Portable.exe`
+
+### Linux build
+
+GitHub Actions builds four Linux packages:
+
+- `Fallout London Companion.AppImage`
+- `Fallout London Companion.flatpak`
+- `Fallout London Companion.deb`
+- `Fallout London Companion.rpm`
+
 ## Development status
 
 ### iOS / iPadOS foundation
@@ -188,7 +241,7 @@ The APK is intended for Android phone/tablet device testing.
 - [x] Auto-Stimpak controller foundation
 - [x] Local-map packet decoding
 - [x] IPA validation in CI
-- [x] SideStore-compatible unsigned IPA packaging
+- [x] Unsigned IPA packaging
 - [x] App icon PNG wired into the asset catalog
 
 ### Android foundation
@@ -218,8 +271,12 @@ The APK is intended for Android phone/tablet device testing.
 - [ ] Radio controls/RPCs
 - [ ] Auto-Doc verification
 - [ ] Audio integration
-- [ ] Persistent cache / Demo Mode
-- [ ] Settings
+- [x] Persistent cache / Demo Mode
+- [x] Settings
+- [x] Database browser and TXT export
+- [x] Windows installer + portable EXE packaging
+- [x] Linux AppImage + Flatpak + DEB + RPM packaging
+- [x] Combined numbered releases across all platform builds
 - [ ] Device testing and polish
 
 The checklists describe the current implementation boundary; they are not a promise that an item has been fully production-tested.
@@ -228,7 +285,7 @@ The checklists describe the current implementation boundary; they are not a prom
 
 **implement → GitHub → CI build → device install → physical-device test → iterate**
 
-The app icon and project SVG remain fixed unless explicitly requested to change. Android additions must not modify those locked assets.
+The app icon and project SVG remain fixed unless explicitly requested to change. Platform packaging may create format-specific copies when required by a target package, but the locked source artwork is not altered.
 
 
 ## Open source
