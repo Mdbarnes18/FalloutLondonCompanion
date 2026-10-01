@@ -29,7 +29,7 @@ This checklist tracks the UI and architectural scaffolding that must be present 
 
 ## DATA
 - [x] Quest/log/workshop/player summaries and full database browser/export
-- [ ] Quest detail/objective/marker presentation and completed/active sections
+- [x] Quest detail/objective/marker presentation and completed/active sections
 - [ ] Notes, statistics, workshop, and miscellaneous data sections
 - [ ] Action feedback and stale-cache indication
 
