@@ -11,6 +11,8 @@ version = file("../VERSION").readText().trim()
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.json:json:20250517")
 }
 kotlin { compilerOptions.jvmTarget.set(JvmTarget.JVM_21) }
 compose.desktop {
@@ -18,7 +20,7 @@ compose.desktop {
         mainClass = "com.falloutlondon.companion.desktop.MainKt"
         nativeDistributions {
             packageName = "Fallout London Companion"
-            packageVersion = version.toString()
+            packageVersion = "1.45.0"
             description = "Fallout London Companion desktop client"
             vendor = "Fallout London Companion"
             targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.AppImage)
