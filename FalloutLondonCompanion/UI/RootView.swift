@@ -159,29 +159,103 @@ struct PlaceholderScreen: View {
 
 struct DataView: View {
     @EnvironmentObject private var app: AppState
+    @State private var expandedQuest: String?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                Text("DATA")
-                    .font(.system(size: 22, design: .monospaced))
+                Text("DATA").font(.system(size: 22, design: .monospaced))
                 HStack {
-                    Text("LIVE DATABASE")
-                        .font(.system(size: 9, design: .monospaced))
-                        .opacity(0.7)
+                    Text("LIVE DATABASE").font(.system(size: 9, design: .monospaced)).opacity(0.7)
                     Spacer()
-                    NavigationLink("BROWSE ALL") { DataBrowserView() }
-                        .font(.system(size: 9, design: .monospaced))
+                    NavigationLink("BROWSE ALL") { DataBrowserView() }.font(.system(size: 9, design: .monospaced))
                 }
-
-                DataSection(title: "QUESTS", path: "quests")
+                QuestDataSection(expandedQuest: $expandedQuest)
                 DataSection(title: "LOG", path: "log")
                 DataSection(title: "WORKSHOP", path: "workshop")
                 DataSection(title: "PLAYER", path: "playerinfo")
+                DataSection(title: "STATISTICS", path: "stats")
+                DataSection(title: "MISC", path: "misc")
             }
-            .foregroundStyle(.green)
-            .padding(16)
+            .foregroundStyle(.green).padding(16)
         }
+    }
+}
+
+struct QuestDataSection: View {
+    @EnvironmentObject private var app: AppState
+    @Binding var expandedQuest: String?
+
+    var body: some View {
+        let quests = app.database.objectChildren(at: "quests")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("QUESTS").font(.system(size: 13, design: .monospaced))
+                Spacer()
+                Text("\(quests.count) NODES").font(.system(size: 8, design: .monospaced)).opacity(0.65)
+            }
+            if quests.isEmpty {
+                Text("NO QUEST DATA RECEIVED").font(.system(size: 8, design: .monospaced)).opacity(0.5)
+            } else {
+                ForEach(quests.keys.sorted(), id: \.self) { key in
+                    if let node = quests[key] {
+                        questRow(key: key, node: node)
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(.green.opacity(0.25)))
+    }
+
+    @ViewBuilder
+    private func questRow(key: String, node: UInt32) -> some View {
+        let name = app.database.objectValue(atNode: node, key: "text")
+        let active = app.database.objectValue(atNode: node, key: "active")
+        let objectives = app.database.objectChildren(atNode: node, key: "objectives")
+        let title: String = {
+            if case .string(let value) = name, !value.isEmpty { return value }
+            return key
+        }()
+        let isActive: Bool = {
+            if case .bool(let value) = active { return value }
+            return false
+        }()
+        VStack(alignment: .leading, spacing: 4) {
+            Button {
+                expandedQuest = expandedQuest == key ? nil : key
+            } label: {
+                HStack {
+                    Text(isActive ? "ACTIVE" : "SET").font(.system(size: 8, design: .monospaced))
+                    Text(title).font(.system(size: 10, design: .monospaced)).lineLimit(1)
+                    Spacer()
+                    Text(expandedQuest == key ? "−" : "+").font(.system(size: 11, design: .monospaced))
+                }
+            }.buttonStyle(.plain)
+            if expandedQuest == key {
+                if objectives.isEmpty {
+                    Text("NO OBJECTIVES").font(.system(size: 8, design: .monospaced)).opacity(0.6)
+                } else {
+                    ForEach(objectives.keys.sorted(), id: \.self) { objectiveKey in
+                        if let objective = objectives[objectiveKey] {
+                            let text = app.database.objectValue(atNode: objective, key: "text")
+                            let completed = app.database.objectValue(atNode: objective, key: "completed")
+                            let failed = app.database.objectValue(atNode: objective, key: "failed")
+                            let label: String = {
+                                if case .string(let value) = text, !value.isEmpty { return value }
+                                return objectiveKey
+                            }()
+                            let done = (completed == .bool(true))
+                            let failedState = (failed == .bool(true))
+                            Text((done ? "✓ " : failedState ? "✗ " : "· ") + label)
+                                .font(.system(size: 8, design: .monospaced))
+                                .opacity(done ? 0.5 : 0.82)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 3)
     }
 }
 
