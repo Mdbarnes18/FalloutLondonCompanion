@@ -27,8 +27,8 @@ import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import java.util.prefs.Preferences
 
-private val prefs = Preferences.userRoot().node("fallout-london-companion")
 import kotlinx.coroutines.launch
+private val prefs = Preferences.userRoot().node("fallout-london-companion")
 
 private val Phosphor = Color(0xFF00FF44)
 private val ScreenBlack = Color(0xFF020A04)
@@ -492,7 +492,7 @@ fun DataScreen(db: PipboyDatabase, connection: PipboyConnection, scope: kotlinx.
                 if(path.isNotEmpty())Text("‹ ROOT",color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=9.sp,modifier=Modifier.clickable{path=""}.padding(vertical=5.dp))
                 val children=db.objectChildren(path).toSortedMap();val arrays=db.nodeId(path)?.let{db.arrayChildren(it)}?:emptyList()
                 if(children.isEmpty()&&arrays.isEmpty())Text(path+" = "+(db.value(path)?.displayText()?:""),color=Phosphor,fontFamily=FontFamily.Monospace,fontSize=9.sp)
-                else{children.forEach{(k,_)->val child=if(path.isEmpty())k else path+"."+k;DataBrowserRow(db,k.uppercase(),child,0){path=it}};arrays.forEachIndexed{i,_->DataBrowserRow(db,"["+i+"]",path+"["+i+"]",0){path=it}}}
+                else{children.forEach{(k,_)->val child=if(path.isEmpty())k else path+"."+k;Text("› "+k.uppercase(), color=Phosphor, fontFamily=FontFamily.Monospace, fontSize=9.sp, modifier=Modifier.fillMaxWidth().clickable{path=child}.padding(vertical=3.dp))};arrays.forEachIndexed{i,_->Text("› ["+i+"]", color=Phosphor, fontFamily=FontFamily.Monospace, fontSize=9.sp, modifier=Modifier.fillMaxWidth().clickable{path=path+"["+i+"]"}.padding(vertical=3.dp))}}
             }
         }
     }
