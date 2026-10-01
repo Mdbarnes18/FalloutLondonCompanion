@@ -66,8 +66,8 @@ struct SettingsScaffoldView: View {
                 Text("Audio and haptics preferences are stored; hardware feedback integration remains pending.").font(.system(size: 8, design: .monospaced)).opacity(0.65)
                 Divider().overlay(.green.opacity(0.3))
                 Text("MEDICAL").font(.system(size: 11, design: .monospaced))
-                Toggle("AUTO-STIMPAK", isOn: Binding(get: { app.autoStimpakEnabled }, set: { app.setAutoStimpakEnabled($0) })).font(.system(size: 10, design: .monospaced))
-                Text("AUTO-STIMPAK THRESHOLD  \(Int(app.autoStimpakThreshold * 100))%").font(.system(size: 9, design: .monospaced))
+                Toggle("AUTO-STIMPAK", isOn: Binding(get: { app.medical.autoStimpakEnabled }, set: { app.setAutoStimpakEnabled($0) })).font(.system(size: 10, design: .monospaced))
+                Text("AUTO-STIMPAK THRESHOLD  \(Int(app.medical.threshold * 100))%").font(.system(size: 9, design: .monospaced))
                 Slider(value: Binding(get: { app.autoStimpakThreshold }, set: { app.setAutoStimpakThreshold($0) }), in: 0.1...0.9, step: 0.05).tint(.green)
                 HStack {
                     Button("USE STIMPAK") { app.useStimpak() }.font(.system(size: 9, design: .monospaced))
