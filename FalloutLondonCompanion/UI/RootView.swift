@@ -21,6 +21,7 @@ struct MainInterface: View {
                     Spacer()
                     Button { showingSettings = true } label: { Image(systemName: "gearshape").foregroundStyle(.green) }
                 }.padding(.horizontal, 8).padding(.vertical, 6)
+                ConnectionStatusBanner(state: app.connection)
                 CRTFrame {
                     if showingSettings { SettingsScaffoldView() }
                     else {
@@ -42,6 +43,43 @@ struct MainInterface: View {
                     }
                 }.padding(.vertical, 10)
             }.toolbar(.hidden, for: .navigationBar)
+        }
+    }
+}
+
+struct ConnectionStatusBanner: View {
+    let state: ConnectionState
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(stateColor).frame(width: 6, height: 6)
+            Text(label).font(.system(size: 8, design: .monospaced))
+            Spacer()
+            if case .failed = state { Text("RETRY VIA RECONNECT") }
+        }
+        .foregroundStyle(stateColor)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(stateColor.opacity(0.05))
+        .overlay(Rectangle().stroke(stateColor.opacity(0.25)))
+    }
+
+    private var label: String {
+        switch state {
+        case .disconnected: return "LINK OFFLINE"
+        case .discovering: return "DISCOVERING"
+        case .connecting: return "CONNECTING"
+        case .connected: return "LINK ONLINE"
+        case .reconnecting: return "RECONNECTING"
+        case .failed(let message): return "LINK ERROR: (message)"
+        }
+    }
+
+    private var stateColor: Color {
+        switch state {
+        case .connected: return .green
+        case .failed: return .orange
+        default: return .green.opacity(0.7)
         }
     }
 }
