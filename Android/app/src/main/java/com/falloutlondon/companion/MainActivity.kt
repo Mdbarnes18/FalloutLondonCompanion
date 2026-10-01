@@ -121,6 +121,7 @@ fun FalloutLondonApp() {
     ) {
         AttaBoyShell {
             Column(Modifier.fillMaxSize()) {
+                ConnectionStatusBanner(connectionState, demoMode)
                 CrtFrame {
                     when (selectedTab) {
                         MainTab.STAT -> StatusScreen(player, medical, db, connection, scope, autoStimpak, stimpakThreshold,
@@ -184,6 +185,26 @@ fun FalloutLondonApp() {
             }
         }
     }
+}
+
+@Composable
+fun ConnectionStatusBanner(state: String, demoMode: Boolean) {
+    val label = when {
+        demoMode -> "DEMO CACHE"
+        state == "CONNECTED" -> "LINK ONLINE"
+        state.startsWith("FAILED") -> "LINK ERROR"
+        state == "RECONNECTING" -> "RECONNECTING"
+        state == "CONNECTING" -> "CONNECTING"
+        state == "DISCOVERING" -> "DISCOVERING"
+        else -> "LINK OFFLINE"
+    }
+    Text(
+        label,
+        color = if (state.startsWith("FAILED")) Color(0xFFFFB000) else Phosphor.copy(alpha = .75f),
+        fontFamily = FontFamily.Monospace,
+        fontSize = 8.sp,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+    )
 }
 
 @Composable
