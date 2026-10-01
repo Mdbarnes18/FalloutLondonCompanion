@@ -47,7 +47,7 @@ struct PlayerState: Equatable {
             maxHP: number("playerinfo.maxhp", fallback.maxHP),
             ap: number("playerinfo.currap", fallback.ap),
             maxAP: number("playerinfo.maxap", fallback.maxAP),
-            radiation: fallback.radiation,
+            radiation: number("status.rads", fallback.radiation),
             carryWeight: number("playerinfo.currweight", fallback.carryWeight),
             maxWeight: number("playerinfo.maxweight", fallback.maxWeight),
             xpProgress: number("playerinfo.xpprogresspct", fallback.xpProgress),
