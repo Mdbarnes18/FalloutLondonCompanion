@@ -176,7 +176,7 @@ fun FalloutLondonApp() {
                                 scope.launch { runCatching { connection.discoverAndConnect() } }
                             }
                         }
-                        MainTab.MAP -> MapScreen(db)
+                        MainTab.MAP -> MapScreen(db, connection, scope)
                         MainTab.RADIO -> RadioPanel(db, connection, scope)
                     }
                 }
@@ -611,7 +611,7 @@ private fun DataBrowserRow(
 }
 
 @Composable
-fun MapScreen(db: PipboyDatabase) {
+fun MapScreen(db: PipboyDatabase, connection: PipboyConnection, scope: CoroutineScope) {
     var mode by rememberSaveable { mutableStateOf("ORIGINAL") }
     var zoom by rememberSaveable { mutableStateOf(1f) }
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
